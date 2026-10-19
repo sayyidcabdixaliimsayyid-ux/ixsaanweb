@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>استمارة طالب جديد</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fdf6e6;color:#2a1d0a;margin:0;padding:16px;line-height:1.6}
+h1{color:#1b6b3a;font-size:22px}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:12px;padding:14px;margin:10px 0}
+input,select{font:inherit;padding:8px;border:1px solid #e8d3a2;border-radius:8px;margin:4px;max-width:100%}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;margin:4px}
+button.s{background:#f7941d;color:#3a2400}
+button:disabled{opacity:.4}
+.field{display:flex;flex-direction:column;margin:8px 0}
+.field label{font-weight:700;margin-bottom:4px}
+.field input,.field select{min-width:280px}
+.hidden{display:none!important}
+.msg{color:#b3261e;min-height:22px;font-weight:700}
+.ok{color:#1b6b3a;font-weight:700}
+.note{color:#6b5a3e;font-size:14px}
+</style>
+</head>
+<body>
+<h1>استمارة طالب جديد</h1>
+<div><a href="admin.html">العودة إلى صفحة الإدارة</a></div>
+
+<div id="loginBox" class="card">
+  <h3>تسجيل الدخول</h3>
+  <input id="email" type="email" placeholder="البريد الإلكتروني">
+  <input id="pass" type="password" placeholder="كلمة المرور">
+  <button onclick="doLogin()">دخول</button>
+  <div id="loginMsg" class="msg"></div>
+</div>
+
+<div id="panel" class="hidden">
+  <div class="note" id="who"></div>
+  <div class="card">
+    <div class="field"><label>الاسم الرباعي</label><input id="fName"></div>
+    <div class="field"><label>اسم ولي الأمر</label><input id="fGuard"></div>
+    <div class="field"><label>الهاتف</label><input id="fPhone"></div>
+    <div class="field"><label>العنوان</label><input id="fAddr"></div>
+    <div class="field"><label>الفصل (اختياري)</label><select id="fClass"></select></div>
+    <div class="field"><label><input type="checkbox" id="fBoarder"> طالب داخلي</label></div>
+    <div class="field"><label><input type="checkbox" id="fInterview"> اجتاز المقابلة</label></div>
+    <div class="field"><label>صورة الطالب</label><input type="file" id="fPhoto" accept="image/*"></div>
+    <div id="msg" class="msg"></div>
+    <button id="saveBtn" onclick="save()">حفظ الاستمارة</button>
+  </div>
+  <div id="done" class="card hidden">
+    <p class="ok" id="doneText"></p>
+    <p class="note">الطالب الآن بانتظار تسديد رسوم القبول عند أمين الصندوق، ثم يعتمده المدير نهائياً.</p>
+    <button onclick="resetForm()">استمارة طالب جديد</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const ALLOWED = ['secretary', 'institute_general', 'institute_manager'];
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const v = id => $(id).value.trim();
+const msg = (t, ok) => { $('msg').textContent = t || ''; $('msg').className = ok ? 'ok' : 'msg'; };
+
+async function doLogin() {
+  const { error } = await db.auth.signInWithPassword({ email: v('email'), password: $('pass').value });
+  if (error) { $('loginMsg').textContent = 'البريد أو كلمة المرور غير صحيحة'; return; }
+  start();
+}
+
+async function start() {
+  const { data: { user } } = await db.auth.getUser();
+  const { data: prof } = await db.from('profiles').select('full_name, role').eq('id', user.id).single();
+  if (!prof || !ALLOWED.includes(prof.role)) {
+    $('loginMsg').textContent = 'هذه الاستمارة للسكرتير والإدارة فقط';
+    await db.auth.signOut();
+    return;
+  }
+  $('who').textContent = prof.full_name;
+  $('loginBox').classList.add('hidden');
+  $('panel').classList.remove('hidden');
+  const { data: classes } = await db.from('classes').select('id, name').order('sort_order');
+  $('fClass').innerHTML = '<option value="">بدون فصل</option>' +
+    (classes || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+async function save() {
+  const full_name = v('fName');
+  if (!full_name) return msg('أدخل اسم الطالب');
+  $('saveBtn').disabled = true;
+  msg('جارٍ الحفظ...', true);
+
+  const { data: row, error } = await db.from('students').insert({
+    full_name,
+    guardian_name: v('fGuard') || null,
+    phone: v('fPhone') || null,
+    address: v('fAddr') || null,
+    class_id: Number($('fClass').value) || null,
+    is_boarder: $('fBoarder').checked,
+    interview_passed: $('fInterview').checked,
+    is_legacy: false,
+    status: 'pending_fee'
+  }).select('id').single();
+
+  if (error) { $('saveBtn').disabled = false; return msg(error.message); }
+
+  // رفع الصورة بعد إنشاء الطالب، والخطأ هنا لا يلغي الحفظ
+  const file = $('fPhoto').files[0];
+  let photoNote = '';
+  if (file) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${row.id}.${ext}`;
+    const { error: upErr } = await db.storage.from('student-photos').upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) photoNote = ' (تعذّر رفع الصورة، أضفها لاحقاً من ملف الطالب)';
+    else await db.from('students').update({ photo_path: path }).eq('id', row.id);
+  }
+
+  $('doneText').textContent = `تم حفظ استمارة ${full_name}${photoNote}`;
+  $('panel').querySelector('.card').classList.add('hidden');
+  $('done').classList.remove('hidden');
+  $('saveBtn').disabled = false;
+  msg('', true);
+}
+
+function resetForm() {
+  ['fName', 'fGuard', 'fPhone', 'fAddr'].forEach(id => $(id).value = '');
+  $('fClass').value = '';
+  $('fBoarder').checked = false;
+  $('fInterview').checked = false;
+  $('fPhoto').value = '';
+  $('done').classList.add('hidden');
+  $('panel').querySelector('.card').classList.remove('hidden');
+}
+
+db.auth.getSession().then(({ data }) => { if (data.session) start(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إدارة معهد الإحسان</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fdf6e6;color:#2a1d0a;margin:0;padding:16px;line-height:1.6}
+h1{color:#1b6b3a;font-size:22px}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:12px;padding:14px;margin:10px 0}
+input,select{font:inherit;padding:8px;border:1px solid #e8d3a2;border-radius:8px;margin:4px;max-width:100%}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;margin:4px}
+button.s{background:#f7941d;color:#3a2400}
+button.d{background:#b3261e}
+button:disabled{opacity:.4}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{border-bottom:1px solid #e8d3a2;padding:6px;text-align:start;font-size:14px}
+th{background:#fbb040}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:#fff3d6}
+.tw{overflow-x:auto}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}
+.hidden{display:none!important}
+.msg{color:#b3261e;min-height:22px;font-weight:700}
+.ok{color:#1b6b3a;font-weight:700}.bad{color:#b3261e;font-weight:700}.mid{color:#8a6100;font-weight:700}
+.note{color:#6b5a3e;font-size:14px}
+.summary{font-weight:700;margin:10px 0}
+.link{color:#1b6b3a;text-decoration:underline;cursor:pointer;font-weight:700}
+.photo{width:110px;height:130px;object-fit:cover;border-radius:10px;border:1px solid #e8d3a2}
+.btn{display:inline-block;background:#1b6b3a;color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;margin:4px}
+</style>
+</head>
+<body style="visibility:hidden">
+<h1>إدارة معهد الإحسان لإعداد العلماء</h1>
+
+<div id="loginBox" class="card">
+  <h3>تسجيل دخول الإدارة</h3>
+  <input id="email" type="email" placeholder="البريد الإلكتروني">
+  <input id="pass" type="password" placeholder="كلمة المرور">
+  <button onclick="doLogin()">دخول</button>
+  <div id="loginMsg" class="msg"></div>
+</div>
+
+<div id="panel" class="hidden">
+  <div class="note" id="who"></div>
+  <div>
+   <a href="dashboard.html" style="background:#f7941d;color:#3a2400;text-decoration:none;padding:8px 14px;border-radius:8px;margin:4px;display:inline-block">لوحة التحكم</a> <button id="btn-classes" onclick="show('classes')">الفصول</button>
+    <button id="btn-students" onclick="show('students')">الطلاب</button>
+    <button id="btn-cashier" onclick="show('cashier')">أمين الصندوق</button>
+    <button class="s" onclick="doLogout()">خروج</button>
+  </div>
+  <div id="msg" class="msg"></div>
+
+  <!-- الفصول -->
+<div id="classes" class="card hidden">    <div id="classForm">
+      <h3>إضافة فصل</h3>
+      <input id="cName" placeholder="اسم الفصل">
+      <input id="cLevel" placeholder="المرحلة (تمهيد أو تأسيس)">
+      <button onclick="addClass()">إضافة</button>
+    </div>
+    <div class="tw"><table>
+      <tr><th>الفصل</th><th>المرحلة</th><th>عدد الطلاب</th><th></th></tr>
+      <tbody id="classList"></tbody>
+    </table></div>
+
+    <div id="classStudents" class="card hidden">
+      <div class="row"><h3 id="csTitle" style="margin:4px 0"></h3><button class="s" onclick="closeClassStudents()">إغلاق</button></div>
+      <div class="tw"><table>
+        <tr><th>م</th><th>الطالب</th><th>ولي الأمر</th><th>الهاتف</th><th>الحالة</th></tr>
+        <tbody id="csList"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- الطلاب -->
+  <div id="students" class="card hidden">
+    <div class="row" id="regRow"><a class="btn" href="register.html">تسجيل طالب جديد</a></div>
+    <div class="row">
+      <input id="sSearch" placeholder="بحث بالاسم أو ولي الأمر أو الهاتف" oninput="debounced(sSearchNow)" style="min-width:260px">
+    </div>
+    <div class="tw"><table>
+      <tr><th>الطالب</th><th>ولي الأمر</th><th>الهاتف</th><th>الفصل</th><th>داخلي</th><th>الحالة</th><th></th></tr>
+      <tbody id="studentList"></tbody>
+    </table></div>
+    <div class="row">
+      <button class="s" onclick="sPage(-1)">السابق</button>
+      <span class="note" id="sInfo"></span>
+      <button class="s" onclick="sPage(1)">التالي</button>
+    </div>
+  </div>
+
+  <!-- ملف الطالب -->
+  <div id="profile" class="card hidden">
+    <div class="row"><h3 id="pName" style="margin:4px 0"></h3><button class="s" onclick="closeProfile()">إغلاق</button></div>
+    <div class="row"><img id="pPhoto" class="photo hidden" alt="صورة الطالب"></div>
+    <div id="pInfo" class="note"></div>
+
+    <div id="pEdit" class="hidden">
+      <h4>تعديل البيانات</h4>
+      <input id="eGuard" placeholder="اسم ولي الأمر">
+      <input id="ePhone" placeholder="الهاتف">
+      <input id="eAddr" placeholder="العنوان" style="min-width:240px">
+      <select id="eClass"></select>
+      <label><input type="checkbox" id="eBoarder"> داخلي</label>
+      <label><input type="checkbox" id="eInterview"> اجتاز المقابلة</label>
+      <button onclick="saveProfile()">حفظ البيانات</button>
+      <div class="row">
+        <input type="file" id="ePhotoFile" accept="image/*">
+        <button class="s" onclick="uploadPhoto()">رفع الصورة</button>
+      </div>
+    </div>
+
+    <div id="pApprove" class="row"></div>
+
+    <h4>النتائج</h4>
+    <div class="tw"><table>
+      <tr><th>السنة</th><th>الفصل</th><th>النتيجة</th></tr>
+      <tbody id="pResults"></tbody>
+    </table></div>
+    <div id="pResAdd" class="row hidden">
+      <input id="rYear" placeholder="السنة (مثال 2026-2027)">
+      <select id="rClass"></select>
+      <input id="rResult" placeholder="النتيجة">
+      <button onclick="addResult()">إضافة نتيجة</button>
+    </div>
+  </div>
+
+  <!-- أمين الصندوق -->
+  <div id="cashier" class="card hidden">
+    <h3>أمين الصندوق</h3>
+    <div class="row">
+      <label>الشهر <input type="month" id="month"></label>
+      <label>الفصل <select id="cFilter"></select></label>
+      <input id="cSearch" placeholder="بحث بالاسم أو الهاتف" oninput="debounced(cSearchNow)">
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="tw"><table>
+      <tr><th>الطالب</th><th>الفصل</th><th>الرسوم الشهرية</th><th>حالة الشهر</th><th>رسوم القبول</th><th></th></tr>
+      <tbody id="cashList"></tbody>
+    </table></div>
+    <div class="row">
+      <button class="s" onclick="cPage(-1)">السابق</button>
+      <span class="note" id="cInfo"></span>
+      <button class="s" onclick="cPage(1)">التالي</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const STD_FEE = 9000, BOARD_FEE = 20000, ADM_FEE = 2000, PAGE = 50;
+
+const ROLE_NAMES = {
+  org_manager: 'مدير المنظمة', exec_manager: 'مدير التنفيذ',
+  institute_general: 'المدير العام للمعهد', institute_manager: 'مدير المعهد',
+  secretary: 'السكرتير', cashier: 'أمين الصندوق',
+  student_affairs: 'شؤون الطلاب', exams: 'قسم الامتحانات'
+};
+const ROLES = {
+  org_manager:       { tabs:['classes','students','cashier'], seePay:true,  editClasses:false, editStudents:false, delStudents:false, pay:false, legacy:false, approve:false, results:'read',  register:false },
+  exec_manager:      { tabs:['classes','students','cashier'], seePay:true,  editClasses:false, editStudents:false, delStudents:false, pay:false, legacy:false, approve:false, results:'read',  register:false },
+  institute_general: { tabs:['classes','students','cashier'], seePay:true,  editClasses:true,  editStudents:true,  delStudents:true,  pay:true,  legacy:true,  approve:true,  results:'write', register:true  },
+  institute_manager: { tabs:['classes','students','cashier'], seePay:true,  editClasses:true,  editStudents:true,  delStudents:true,  pay:false, legacy:true,  approve:true,  results:'write', register:true  },
+  secretary:         { tabs:['classes','students'],           seePay:false, editClasses:false, editStudents:true,  delStudents:false, pay:false, legacy:false, approve:false, results:'none',  register:true  },
+  cashier:           { tabs:['students','cashier'],           seePay:true,  editClasses:false, editStudents:false, delStudents:false, pay:true,  legacy:false, approve:false, results:'none',  register:false },
+  student_affairs:   { tabs:['classes','students'],           seePay:false, editClasses:false, editStudents:true,  delStudents:false, pay:false, legacy:false, approve:false, results:'none',  register:false },
+  exams:             { tabs:['classes','students'],           seePay:false, editClasses:false, editStudents:false, delStudents:false, pay:false, legacy:false, approve:false, results:'none',  register:false }
+};
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let ME = null, classes = [], classCounts = {};
+let sRows = [], sCount = 0, sState = { q: '', p: 0 };
+let cRows = [], cCount = 0, cPays = [], cState = { q: '', p: 0, cls: '' };
+let current = null, dt;
+
+const $ = id => document.getElementById(id);
+const v = id => $(id).value.trim();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => Number(n).toLocaleString('en') + ' شلن';
+const msg = (t, ok) => { $('msg').textContent = t || ''; $('msg').className = ok ? 'ok' : 'msg'; };
+const pages = n => Math.max(1, Math.ceil(n / PAGE));
+const className = id => { const c = classes.find(x => x.id === id); return c ? c.name : '—'; };
+const debounced = fn => { clearTimeout(dt); dt = setTimeout(fn, 400); };
+const stype = s => s.is_legacy ? 'طالب سابق' : (s.status === 'approved' ? 'مقبول' : 'بانتظار تسديد القبول');
+const monthlyDue = s => s.is_boarder ? BOARD_FEE : STD_FEE;
+
+function searchFilter(q) {
+  const t = (q || '').replace(/[%,()]/g, ' ').trim();
+  if (!t) return null;
+  return `full_name.ilike.%${t}%,guardian_name.ilike.%${t}%,phone.ilike.%${t}%`;
+}
+
+$('month').value = new Date().toISOString().slice(0, 7);
+$('month').onchange = () => { cState.p = 0; loadCashier(); };
+$('cFilter').onchange = () => { cState.cls = $('cFilter').value; cState.p = 0; loadCashier(); };
+
+function show(tab) {
+  ['classes', 'students', 'cashier'].forEach(t => $(t).classList.toggle('hidden', t !== tab));
+  $('profile').classList.add('hidden');
+  if (tab === 'students') loadStudents();
+  if (tab === 'cashier') loadCashier();
+}
+
+async function doLogin() {
+  const { error } = await db.auth.signInWithPassword({ email: v('email'), password: $('pass').value });
+  if (error) { $('loginMsg').textContent = 'البريد أو كلمة المرور غير صحيحة'; return; }
+  start();
+}
+async function doLogout() { await db.auth.signOut(); location.reload(); }
+
+async function start() {
+  const { data: { user } } = await db.auth.getUser();
+  const { data: prof, error } = await db.from('profiles').select('full_name, role').eq('id', user.id).single();
+  if (error || !prof || !ROLES[prof.role]) {
+    $('loginMsg').textContent = 'هذا الحساب غير مرتبط بأي دور في النظام';
+    await db.auth.signOut();
+    return;
+  }
+  ME = { ...prof, ...ROLES[prof.role] };
+  $('who').textContent = `${prof.full_name} — ${ROLE_NAMES[prof.role]}`;
+  $('loginBox').classList.add('hidden');
+  $('panel').classList.remove('hidden');
+  ['classes', 'students', 'cashier'].forEach(t => $('btn-' + t).classList.toggle('hidden', !ME.tabs.includes(t)));
+  $('classForm').classList.toggle('hidden', !ME.editClasses);
+  $('regRow').classList.toggle('hidden', !ME.register);
+  await loadClasses();
+const wanted = new URLSearchParams(location.search).get('tab');
+show(ME.tabs.includes(wanted) ? wanted : ME.tabs[0]);}
+
+function refreshAll() {
+  loadClasses();
+  loadStudents();
+  if (ME.tabs.includes('cashier')) loadCashier();
+}
+
+// ---------- الفصول ----------
+async function loadClasses() {
+  const { data, error } = await db.from('classes').select('*').order('sort_order');
+  if (error) return msg(error.message);
+  classes = data;
+  const res = await Promise.all(classes.map(c =>
+    db.from('students').select('id', { count: 'exact', head: true }).eq('class_id', c.id)));
+  classCounts = {};
+  classes.forEach((c, i) => classCounts[c.id] = res[i].count || 0);
+  const opts = classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('sClass') && ($('sClass').innerHTML = '<option value="">بدون فصل</option>' + opts);
+  $('eClass').innerHTML = '<option value="">بدون فصل</option>' + opts;
+  $('rClass').innerHTML = opts;
+  $('cFilter').innerHTML = '<option value="">كل الفصول</option>' + opts;
+  $('cFilter').value = cState.cls;
+  renderClasses();
+}
+
+function renderClasses() {
+  $('classList').innerHTML = classes.length
+    ? classes.map(c => `<tr class="clickable" onclick="showClassStudents(${c.id}, event)">
+        <td>${esc(c.name)}</td><td>${esc(c.level)}</td><td>${classCounts[c.id] || 0}</td>
+        <td>${ME.editClasses ? `<button class="s" onclick="event.stopPropagation(); delClass(${c.id})">حذف</button>` : ''}</td></tr>`).join('')
+    : '<tr><td colspan="4">لا توجد فصول بعد</td></tr>';
+}
+
+async function showClassStudents(id, ev) {
+  if (ev && ev.target.closest('button')) return;
+  const c = classes.find(x => x.id === id);
+  const { data, error, count } = await db.from('students').select('*', { count: 'exact' })
+    .eq('class_id', id).order('full_name').range(0, 999);
+  if (error) return msg(error.message);
+  $('csTitle').textContent = `طلاب فصل ${c.name} (${count || 0})`;
+  $('csList').innerHTML = data.length
+    ? data.map((s, i) => `<tr><td>${i + 1}</td>
+        <td><span class="link" onclick="openProfile(${s.id})">${esc(s.full_name)}</span></td>
+        <td>${esc(s.guardian_name)}</td><td>${esc(s.phone)}</td><td>${stype(s)}</td></tr>`).join('')
+    : '<tr><td colspan="5">لا يوجد طلاب في هذا الفصل</td></tr>';
+  $('classStudents').classList.remove('hidden');
+  $('classStudents').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function closeClassStudents() { $('classStudents').classList.add('hidden'); }
+
+async function addClass() {
+  const name = v('cName');
+  if (!name) return msg('أدخل اسم الفصل');
+  const { error } = await db.from('classes').insert({ name, level: v('cLevel') || null });
+  if (error) return msg(error.message);
+  $('cName').value = ''; $('cLevel').value = '';
+  loadClasses();
+}
+
+async function delClass(id) {
+  if (!confirm('حذف الفصل؟ سيبقى الطلاب مسجلين بدون فصل.')) return;
+  const { error } = await db.from('classes').delete().eq('id', id);
+  if (error) return msg(error.message);
+  refreshAll();
+}
+
+// ---------- الطلاب ----------
+async function loadStudents() {
+  const from = sState.p * PAGE, to = from + PAGE - 1;
+  let q = db.from('students').select('*', { count: 'exact' }).order('full_name').range(from, to);
+  const f = searchFilter(sState.q);
+  if (f) q = q.or(f);
+  const { data, error, count } = await q;
+  if (error) return msg(error.message);
+  sRows = data; sCount = count || 0;
+  renderStudents();
+}
+
+function renderStudents() {
+  $('sInfo').textContent = `${sCount} طالب — صفحة ${sState.p + 1} من ${pages(sCount)}`;
+  $('studentList').innerHTML = sRows.length
+    ? sRows.map(s => {
+        const cls = ME.editStudents
+          ? `<select onchange="moveStudent(${s.id}, this.value)"><option value="">—</option>
+              ${classes.map(c => `<option value="${c.id}" ${c.id === s.class_id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+             </select>`
+          : esc(className(s.class_id));
+        const boarder = ME.editStudents
+          ? `<input type="checkbox" ${s.is_boarder ? 'checked' : ''} onchange="toggleBoarder(${s.id}, this.checked)">`
+          : (s.is_boarder ? 'نعم' : 'لا');
+        const del = ME.delStudents ? `<button class="s" onclick="delStudent(${s.id})">حذف</button>` : '';
+        return `<tr><td><span class="link" onclick="openProfile(${s.id})">${esc(s.full_name)}</span></td>
+          <td>${esc(s.guardian_name)}</td><td>${esc(s.phone)}</td><td>${cls}</td>
+          <td>${boarder}</td><td>${stype(s)}</td><td>${del}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="7">لا توجد نتائج</td></tr>';
+}
+
+function sSearchNow() { sState.q = v('sSearch'); sState.p = 0; loadStudents(); }
+function sPage(d) {
+  const np = sState.p + d;
+  if (np < 0 || np >= pages(sCount)) return;
+  sState.p = np; loadStudents();
+}
+
+async function moveStudent(id, classId) {
+  const { error } = await db.from('students').update({ class_id: Number(classId) || null }).eq('id', id);
+  if (error) return msg(error.message);
+  refreshAll();
+}
+async function toggleBoarder(id, val) {
+  const { error } = await db.from('students').update({ is_boarder: val }).eq('id', id);
+  if (error) return msg(error.message);
+  refreshAll();
+}
+async function delStudent(id) {
+  if (!confirm('حذف الطالب وكل مدفوعاته ونتائجه؟')) return;
+  const { error } = await db.from('students').delete().eq('id', id);
+  if (error) return msg(error.message);
+  closeProfile();
+  refreshAll();
+}
+
+// ---------- ملف الطالب ----------
+async function openProfile(id) {
+  const { data: s, error } = await db.from('students').select('*').eq('id', id).single();
+  if (error) return msg(error.message);
+  current = s;
+
+  $('pName').textContent = s.full_name;
+  $('pInfo').innerHTML = `
+    ولي الأمر: <b>${esc(s.guardian_name) || '—'}</b><br>
+    الهاتف: <b>${esc(s.phone) || '—'}</b><br>
+    العنوان: <b>${esc(s.address) || '—'}</b><br>
+    الفصل الحالي: <b>${esc(className(s.class_id))}</b><br>
+    داخلي: <b>${s.is_boarder ? 'نعم' : 'لا'}</b> — المقابلة: <b>${s.interview_passed ? 'اجتاز' : 'لم يُسجَّل'}</b><br>
+    الحالة: <b>${stype(s)}</b>`;
+
+  if (s.photo_path) {
+    const { data: u } = await db.storage.from('student-photos').createSignedUrl(s.photo_path, 3600);
+    if (u) { $('pPhoto').src = u.signedUrl; $('pPhoto').classList.remove('hidden'); }
+  } else {
+    $('pPhoto').classList.add('hidden');
+  }
+
+  if (ME.editStudents) {
+    $('pEdit').classList.remove('hidden');
+    $('eGuard').value = s.guardian_name || '';
+    $('ePhone').value = s.phone || '';
+    $('eAddr').value = s.address || '';
+    $('eClass').value = s.class_id || '';
+    $('eBoarder').checked = s.is_boarder;
+    $('eInterview').checked = s.interview_passed;
+  } else {
+    $('pEdit').classList.add('hidden');
+  }
+
+  await renderApprove(s);
+  await loadResults(s.id);
+
+  $('pResAdd').classList.toggle('hidden', ME.results !== 'write');
+  $('profile').classList.remove('hidden');
+  $('profile').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeProfile() { $('profile').classList.add('hidden'); current = null; }
+
+async function renderApprove(s) {
+  $('pApprove').innerHTML = '';
+  if (!ME.approve || s.status !== 'pending_fee' || s.is_legacy) return;
+  const { data: adm } = await db.from('payments').select('id').eq('student_id', s.id).eq('kind', 'admission').limit(1);
+  $('pApprove').innerHTML = adm && adm.length
+    ? `<button onclick="approveStudent(${s.id})">اعتماد الطالب نهائياً</button>`
+    : '<span class="mid">بانتظار تسديد رسوم القبول عند أمين الصندوق</span>';
+}
+
+async function saveProfile() {
+  if (!current) return;
+  const { error } = await db.from('students').update({
+    guardian_name: v('eGuard') || null,
+    phone: v('ePhone') || null,
+    address: v('eAddr') || null,
+    class_id: Number($('eClass').value) || null,
+    is_boarder: $('eBoarder').checked,
+    interview_passed: $('eInterview').checked
+  }).eq('id', current.id);
+  if (error) return msg(error.message);
+  msg('تم حفظ البيانات', true);
+  openProfile(current.id);
+  refreshAll();
+}
+
+async function uploadPhoto() {
+  if (!current) return;
+  const file = $('ePhotoFile').files[0];
+  if (!file) return msg('اختر صورة أولاً');
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${current.id}.${ext}`;
+  const { error: upErr } = await db.storage.from('student-photos').upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) return msg(upErr.message);
+  const { error } = await db.from('students').update({ photo_path: path }).eq('id', current.id);
+  if (error) return msg(error.message);
+  $('ePhotoFile').value = '';
+  msg('تم رفع الصورة', true);
+  openProfile(current.id);
+}
+
+async function approveStudent(id) {
+  if (!confirm('اعتماد الطالب نهائياً؟')) return;
+  const { error } = await db.from('students').update({ status: 'approved' }).eq('id', id);
+  if (error) return msg(error.message);
+  msg('تم اعتماد الطالب', true);
+  openProfile(id);
+  refreshAll();
+}
+
+async function loadResults(id) {
+  const { data, error } = await db.from('class_history').select('*').eq('student_id', id).order('school_year');
+  if (error) { $('pResults').innerHTML = `<tr><td colspan="3">${esc(error.message)}</td></tr>`; return; }
+  $('pResults').innerHTML = data.length
+    ? data.map(r => `<tr><td>${esc(r.school_year)}</td><td>${esc(r.class_name)}</td><td>${esc(r.result) || '—'}</td></tr>`).join('')
+    : '<tr><td colspan="3">لا توجد نتائج مسجلة</td></tr>';
+}
+
+async function addResult() {
+  if (!current) return;
+  const year = v('rYear'), result = v('rResult');
+  const cls = classes.find(c => c.id === Number($('rClass').value));
+  if (!year || !cls) return msg('أدخل السنة واختر الفصل');
+  const { error } = await db.from('class_history').insert({
+    student_id: current.id, class_name: cls.name, school_year: year, result: result || null
+  });
+  if (error) return msg(error.message);
+  $('rYear').value = ''; $('rResult').value = '';
+  loadResults(current.id);
+}
+
+// ---------- أمين الصندوق ----------
+async function loadCashier() {
+  const month = $('month').value;
+  const from = cState.p * PAGE, to = from + PAGE - 1;
+  let q = db.from('students').select('*', { count: 'exact' }).order('full_name').range(from, to);
+  if (cState.cls) q = q.eq('class_id', Number(cState.cls));
+  const f = searchFilter(cState.q);
+  if (f) q = q.or(f);
+  const { data, error, count } = await q;
+  if (error) return msg(error.message);
+  cRows = data; cCount = count || 0;
+
+  const ids = cRows.map(s => s.id);
+  cPays = [];
+  if (ids.length) {
+    const { data: pd, error: pe } = await db.from('payments').select('*')
+      .in('student_id', ids).or(`month.eq.${month},kind.eq.admission`);
+    if (pe) return msg(pe.message);
+    cPays = pd;
+  }
+  renderCashier();
+}
+
+const monthPaid = (sid, month) => cPays.some(p => p.student_id === sid && p.kind === 'monthly' && p.month === month);
+const admPaid = sid => cPays.some(p => p.student_id === sid && p.kind === 'admission');
+
+function renderCashier() {
+  const month = $('month').value;
+  let reqM = 0, paidM = 0, admOwed = 0;
+  $('cashList').innerHTML = cRows.length
+    ? cRows.map(s => {
+        const due = monthlyDue(s);
+        const paid = monthPaid(s.id, month);
+        reqM += due; if (paid) paidM += due;
+        const mStatus = paid ? '<span class="ok">مسدد</span>' : '<span class="bad">غير مسدد</span>';
+        const mBtn = (ME.pay && !paid) ? `<button onclick="payMonthly(${s.id})">دفع ${money(due)}</button>` : '';
+        let aStatus, aBtn = '';
+        if (s.is_legacy) {
+          aStatus = '<span class="ok">معفى (طالب سابق)</span>';
+        } else if (admPaid(s.id)) {
+          aStatus = '<span class="ok">مدفوع</span>';
+        } else {
+          aStatus = `<span class="mid">مستحق ${money(ADM_FEE)}</span>`;
+          admOwed += ADM_FEE;
+          if (ME.pay) aBtn = `<button class="s" onclick="payAdmission(${s.id})">دفع القبول</button>`;
+        }
+        return `<tr><td>${esc(s.full_name)}</td><td>${esc(className(s.class_id))}</td>
+          <td>${money(due)}${s.is_boarder ? ' (داخلي)' : ''}</td>
+          <td>${mStatus}</td><td>${aStatus}</td><td>${mBtn} ${aBtn}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="6">لا توجد نتائج</td></tr>';
+  $('summary').textContent =
+    `في هذه الصفحة — المطلوب للشهر: ${money(reqM)} | المسدد: ${money(paidM)} | المتبقي: ${money(reqM - paidM)} | رسوم قبول مستحقة: ${money(admOwed)}`;
+  $('cInfo').textContent = `${cCount} طالب — صفحة ${cState.p + 1} من ${pages(cCount)}`;
+}
+
+function cSearchNow() { cState.q = v('cSearch'); cState.p = 0; loadCashier(); }
+function cPage(d) {
+  const np = cState.p + d;
+  if (np < 0 || np >= pages(cCount)) return;
+  cState.p = np; loadCashier();
+}
+
+async function payMonthly(sid) {
+  const month = $('month').value;
+  const s = cRows.find(x => x.id === sid);
+  const amount = monthlyDue(s);
+  if (!confirm(`تأكيد دفع ${money(amount)} عن ${s.full_name} لشهر ${month}؟`)) return;
+  const { error } = await db.from('payments').insert({ student_id: sid, month, amount, kind: 'monthly' });
+  if (error) return msg(error.code === '23505' ? 'هذا الشهر مدفوع مسبقاً' : error.message);
+  loadCashier();
+}
+
+async function payAdmission(sid) {
+  const month = $('month').value;
+  const s = cRows.find(x => x.id === sid);
+  if (!confirm(`تأكيد دفع رسوم القبول ${money(ADM_FEE)} عن ${s.full_name}؟`)) return;
+  const { error } = await db.from('payments').insert({ student_id: sid, month, amount: ADM_FEE, kind: 'admission' });
+  if (error) return msg(error.code === '23505' ? 'رسوم القبول مدفوعة مسبقاً' : error.message);
+  loadCashier();
+}
+
+db.auth.getSession().then(async ({ data }) => {
+  if (data.session) await start();
+  document.body.style.visibility = 'visible';
+});</script>
+</body>
+</html>

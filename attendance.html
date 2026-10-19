@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الحضور والغياب</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fbf7ee;color:#2a1d0a;margin:0;line-height:1.5}
+header{background:linear-gradient(120deg,#123d24,#1b6b3a);color:#fff;padding:14px 18px}
+header h1{margin:0;font-size:20px}
+header a{color:#fbb040;font-size:14px;text-decoration:none}
+.wrap{padding:14px;max-width:900px;margin:0 auto}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 4px 12px rgba(0,0,0,.05)}
+input,select{font:inherit;padding:8px;border:1px solid #e8d3a2;border-radius:8px;margin:4px;max-width:100%}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:10px;padding:9px 16px;cursor:pointer;margin:4px}
+button.s{background:#f7941d;color:#3a2400}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid #e8d3a2;padding:7px;text-align:start;font-size:14px}
+th{background:#fbb040}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ok{color:#1b6b3a;font-weight:700}.bad{color:#b3261e;font-weight:700}.note{color:#6b5a3e;font-size:14px}
+.msg{color:#b3261e;font-weight:700;min-height:20px}
+.hidden{display:none!important}
+.st-present{color:#1b6b3a;font-weight:700}.st-absent{color:#b3261e;font-weight:700}.st-late{color:#8a6100;font-weight:700}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card{animation:fadeUp .5s ease both}
+</style>
+</head>
+<body>
+<header>
+  <h1>الحضور والغياب</h1>
+  <a href="dashboard.html">← لوحة التحكم</a>
+</header>
+
+<div id="gate" class="wrap">
+  <div class="card" style="max-width:380px;margin:30px auto">
+    <h3 style="margin-top:0;color:#1b6b3a">تسجيل الدخول</h3>
+    <input id="gEmail" type="email" placeholder="البريد الإلكتروني" style="width:100%">
+    <input id="gPass" type="password" placeholder="كلمة المرور" style="width:100%">
+    <button onclick="login()" style="width:100%">دخول</button>
+    <div id="gateMsg" class="msg"></div>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="note" id="who"></div>
+
+  <!-- وضع التحضير: يُفتح من الجدول عند نقر الأستاذ على حصته -->
+  <div id="sessionBox" class="card hidden">
+    <h3 id="sTitle" style="margin:4px 0;color:#1b6b3a"></h3>
+    <div class="row">
+      <label>التاريخ <input type="date" id="sDate"></label>
+      <button class="s" onclick="setAll('present')">الكل حاضر</button>
+      <button class="s" onclick="setAll('absent')">الكل غائب</button>
+    </div>
+    <div id="sMsg" class="msg"></div>
+    <table>
+      <tr><th>م</th><th>الطالب</th><th>الحالة</th></tr>
+      <tbody id="sList"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px">
+      <button id="saveBtn" onclick="saveSession()">حفظ التحضير</button>
+      <a href="timetable.html" class="note">العودة إلى الجدول</a>
+    </div>
+  </div>
+
+  <!-- وضع التقارير: للإدارة والسكرتير وشؤون الطلاب -->
+  <div id="reportBox" class="card hidden">
+    <h3 style="margin:4px 0;color:#1b6b3a">تقرير الحضور والغياب</h3>
+    <div class="row">
+      <label>الفصل <select id="rClass"></select></label>
+      <label>من <input type="date" id="rFrom"></label>
+      <label>إلى <input type="date" id="rTo"></label>
+      <button onclick="loadReport()">عرض</button>
+    </div>
+    <div id="rSummary" class="note"></div>
+    <table>
+      <tr><th>الطالب</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>تفاصيل الغياب</th></tr>
+      <tbody id="rList"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY='sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const TT_ID='tt_1448_s2';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s??'').replace(/\s+/g,'');
+const DAYS=['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء'];
+const JS_DAY=[6,0,1,2,3];
+const PER_LABEL=['٧:٣٠ – ٨:٣٠','٨:٣٠ – ٩:٣٠','٩:٣٠ – ١٠:٣٠','١١:٠٠ – ١٢:٠٠','١٢:٠٠ – ١:٠٠','١:٣٠ – ٢:٣٠'];
+const READ_ROLES=['institute_general','institute_manager','exec_manager','org_manager','secretary','student_affairs','teacher'];
+const SAVE_ROLES=['institute_general','institute_manager'];
+const LABEL={present:'حاضر',absent:'غائب',late:'متأخر'};
+let me=null, classes=[];
+const today=()=>new Date().toISOString().slice(0,10);
+
+async function login(){
+  const {error}=await db.auth.signInWithPassword({email:$('gEmail').value.trim(),password:$('gPass').value});
+  if(error){$('gateMsg').textContent='البريد أو كلمة المرور غير صحيحة';return}
+  enter();
+}
+
+async function enter(){
+  const {data:{user}}=await db.auth.getUser();
+  if(!user) return;
+  const {data:prof,error}=await db.from('profiles').select('full_name,role,teacher_keys').eq('id',user.id).single();
+  if(error||!prof||!READ_ROLES.includes(prof.role)){
+    $('gateMsg').textContent='لا تملك صلاحية الوصول إلى هذه الصفحة';
+    await db.auth.signOut();return;
+  }
+  me=prof;
+  $('gate').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('who').textContent=prof.full_name+(prof.role==='teacher'?' — معلم':'');
+  const {data:cl}=await db.from('classes').select('id,name').order('sort_order');
+  classes=cl||[];
+  const params=new URLSearchParams(location.search);
+  if(params.has('d')&&params.has('r')&&params.has('p')) openSession(+params.get('d'),+params.get('r'),+params.get('p'));
+  else openReport();
+}
+
+// ---------- وضع التحضير ----------
+async function openSession(d,r,p){
+  $('reportBox').classList.add('hidden');
+  $('sessionBox').classList.remove('hidden');
+  const {data:row,error}=await db.from('timetables').select('data').eq('id',TT_ID).maybeSingle();
+  if(error||!row){$('sMsg').textContent='تعذّر تحميل الجدول';return}
+  const T=row.data, cell=T.g[d][r][p], className=T.cl[r], subject=cell[0], teacher=cell[1];
+  if(!(me.teacher_keys||[]).includes(teacher)&&!SAVE_ROLES.includes(me.role)){
+    $('sTitle').textContent='هذه الحصة لمعلم آخر';
+    $('saveBtn').disabled=true;return;
+  }
+  $('sTitle').textContent=`${className} — ${subject} — ${DAYS[d]} ${PER_LABEL[p]} — المعلم: ${teacher}`;
+  const canSave=SAVE_ROLES.includes(me.role)||(me.teacher_keys||[]).includes(teacher);
+  $('saveBtn').disabled=!canSave;
+  window.S={d,p,className,subject,teacher};
+  $('sDate').value=today();
+  $('sDate').onchange=()=>loadSession();
+  await loadSession();
+}
+
+async function loadSession(){
+  const {d,p,className,subject,teacher}=window.S;
+  const date=$('sDate').value;
+  const cls=classes.find(c=>norm(c.name)===norm(className));
+  if(!cls){$('sMsg').textContent='هذا الفصل غير موجود في قاعدة البيانات';return}
+  const {data:students}=await db.from('students').select('id,full_name').eq('class_id',cls.id).order('full_name').range(0,999);
+  const list=students||[];
+  const ids=list.map(s=>s.id);
+  let existing={};
+  if(ids.length){
+    const {data:ex}=await db.from('attendance').select('student_id,status')
+      .eq('att_date',date).eq('subject',subject).eq('period',p).in('student_id',ids);
+    (ex||[]).forEach(x=>existing[x.student_id]=x.status);
+  }
+  window.S.students=list; window.S.cls=cls;
+  $('sList').innerHTML=list.length?list.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.full_name)}</td>
+    <td><select data-sid="${s.id}">
+      ${['present','absent','late'].map(k=>`<option value="${k}" ${(existing[s.id]||'present')===k?'selected':''}>${LABEL[k]}</option>`).join('')}
+    </select></td></tr>`).join(''):'<tr><td colspan="3">لا يوجد طلاب في هذا الفصل</td></tr>';
+  $('sMsg').textContent=existing&&Object.keys(existing).length?'تم تحضير هذه الحصة سابقاً، يمكنك تعديله':'';
+}
+
+function setAll(v){document.querySelectorAll('#sList select').forEach(s=>s.value=v)}
+
+async function saveSession(){
+  const {d,p,subject,teacher}=window.S;
+  const date=$('sDate').value;
+  const wd=new Date(date+'T00:00:00').getDay();
+  if(wd!==JS_DAY[d]){$('sMsg').textContent='تاريخ الحصة لا يطابق يوم '+DAYS[d]+'، اختر التاريخ الصحيح';return}
+  const rows=[...document.querySelectorAll('#sList select')].map(sel=>({
+    student_id:+sel.dataset.sid, class_name:window.S.cls.name, att_date:date,
+    subject, period:p, teacher_name:teacher, status:sel.value, recorded_by:me.full_name
+  }));
+  if(!rows.length) return;
+  $('saveBtn').disabled=true;
+  const {error}=await db.from('attendance').upsert(rows,{onConflict:'student_id,att_date,subject,period'});
+  $('saveBtn').disabled=false;
+  $('sMsg').textContent=error?('تعذّر الحفظ: '+error.message):('تم حفظ تحضير '+rows.length+' طالباً ✓');
+  if(!error) $('sMsg').className='ok';
+}
+
+// ---------- وضع التقارير ----------
+function openReport(){
+  $('sessionBox').classList.add('hidden');
+  $('reportBox').classList.remove('hidden');
+  $('rClass').innerHTML=classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  const first=new Date(); first.setDate(1);
+  $('rFrom').value=first.toISOString().slice(0,10);
+  $('rTo').value=today();
+  loadReport();
+}
+
+async function loadReport(){
+  const cls=classes.find(c=>String(c.id)===$('rClass').value);
+  if(!cls) return;
+  const {data:students}=await db.from('students').select('id,full_name').eq('class_id',cls.id).order('full_name').range(0,999);
+  const {data:recs}=await db.from('attendance').select('student_id,status,att_date,subject')
+    .eq('class_name',cls.name).gte('att_date',$('rFrom').value).lte('att_date',$('rTo').value).range(0,9999);
+  const by={};
+  (recs||[]).forEach(r=>{(by[r.student_id]=by[r.student_id]||[]).push(r)});
+  $('rList').innerHTML=(students||[]).map(s=>{
+    const a=by[s.id]||[];
+    const c=k=>a.filter(x=>x.status===k).length;
+    const abs=a.filter(x=>x.status==='absent').map(x=>`${x.att_date} (${esc(x.subject)})`).join('، ');
+    return `<tr><td>${esc(s.full_name)}</td><td class="st-present">${c('present')}</td>
+      <td class="st-absent">${c('absent')}</td><td class="st-late">${c('late')}</td><td class="note">${abs||'—'}</td></tr>`;
+  }).join('')||'<tr><td colspan="5">لا يوجد طلاب</td></tr>';
+  $('rSummary').textContent=`عدد السجلات في الفترة: ${(recs||[]).length}`;
+}
+
+db.auth.getSession().then(({data})=>{ if(data.session) enter(); });
+</script>
+</body>
+</html>

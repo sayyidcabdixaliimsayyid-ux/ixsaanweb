@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>استيراد الطلاب من Excel</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fdf6e6;color:#2a1d0a;margin:0;padding:16px;line-height:1.6}
+h1{color:#1b6b3a;font-size:22px}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:12px;padding:14px;margin:10px 0}
+input{font:inherit;padding:8px;border:1px solid #e8d3a2;border-radius:8px;margin:4px;max-width:100%}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;margin:4px}
+button.s{background:#f7941d;color:#3a2400}
+button:disabled{opacity:.4}
+table{border-collapse:collapse;width:100%;min-width:440px}
+th,td{border-bottom:1px solid #e8d3a2;padding:6px;text-align:start;font-size:14px}
+th{background:#fbb040}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:#fff3d6}
+tr.clickable.active td{background:#ffe7a8;font-weight:700}
+.tw{overflow-x:auto}
+.hidden{display:none!important}
+.msg{color:#b3261e;min-height:22px;font-weight:700}
+.ok{color:#1b6b3a;font-weight:700}
+.note{color:#6b5a3e;font-size:14px}
+.warn{color:#8a6100;font-weight:700}
+.tag-new{color:#1b6b3a;font-weight:700}
+.tag-old{color:#6b5a3e}
+</style>
+</head>
+<body>
+<h1>استيراد الطلاب من ملف Excel</h1>
+<div><a href="admin.html">العودة إلى صفحة الإدارة</a></div>
+
+<div id="loginBox" class="card">
+  <h3>تسجيل الدخول</h3>
+  <input id="email" type="email" placeholder="البريد الإلكتروني">
+  <input id="pass" type="password" placeholder="كلمة المرور">
+  <button onclick="doLogin()">دخول</button>
+  <div id="loginMsg" class="msg"></div>
+</div>
+
+<div id="panel" class="hidden">
+  <div class="note" id="who"></div>
+  <div id="msg" class="msg"></div>
+
+  <div class="card">
+    <h3>1) اختر ملف Excel</h3>
+    <p class="note">الملف يُقرأ داخل متصفحك، ولا يُرفع إلى أي مكان قبل الحفظ.</p>
+    <input type="file" id="file" accept=".xlsx,.xls" onchange="onFile(event)">
+  </div>
+
+  <div class="card hidden" id="previewCard">
+    <h3>2) المعاينة</h3>
+    <div id="summary" class="note"></div>
+    <p class="note">اضغط على اسم أي فصل لعرض طلابه.</p>
+    <div class="tw"><table>
+      <tr><th>الفصل</th><th>في الملف</th><th>مكرر داخل الملف</th><th>موجود مسبقاً</th><th>سيُضاف</th></tr>
+      <tbody id="previewList"></tbody>
+    </table></div>
+    <div id="unknownBox" class="warn"></div>
+  </div>
+
+  <div class="card hidden" id="detailCard">
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <h3 id="detailTitle" style="margin:6px 0"></h3>
+      <button class="s" onclick="closeDetail()">إغلاق</button>
+    </div>
+    <div id="detailSummary" class="note"></div>
+    <div class="tw"><table>
+      <tr><th>م</th><th>اسم الطالب</th><th>الحالة</th></tr>
+      <tbody id="detailList"></tbody>
+    </table></div>
+  </div>
+
+  <div class="card hidden" id="saveCard">
+    <h3>3) الحفظ</h3>
+    <button id="saveBtn" onclick="saveAll()">حفظ الطلاب في النظام</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const ALLOWED = ['institute_general', 'institute_manager'];
+
+// أسماء الفصول في الملف ← أسماء الفصول في النظام
+const MAP = {
+  'التمهيد الثاني ف2 (أ)': 'تمهيد ٢ (ف٢ أ)',
+  'التمهيد الثاني ف2 (ب)': 'تمهيد ٢ (ف٢ ب)',
+  'التمهيد الثاني ف1': 'تمهيد ٢ (ف١)',
+  'التمهيد الأول ف1 (ج)': 'تمهيد ١ (ف١ ج)',
+  'التمهيد الأول ف1 (ب)': 'تمهيد ١ (ف١ ب)',
+  'التمهيد الأول ف1 (أ)': 'تمهيد ١ (ف١ أ)',
+  'التمهيد الأول ف2 (ب)': 'تمهيد ١ (ف٢ ب)',
+  'التمهيد الأول ف2 (أ)': 'تمهيد ١ (ف٢ أ)',
+  'التأسيس الأول ف1': 'تأسيس ١ (ف١)',
+  'التأسيس الأول ف2': 'تأسيس ١ (ف٢)',
+  'التأسيس الثاني ف1': 'تأسيس ٢ (ف١)',
+  'التأسيس الثاني ف2': 'تأسيس ٢ (ف٢)',
+  'التأسيس الثالث (أ)': 'تأسيس ٣ (أ)',
+  'التأسيس الثالث (ب)': 'تأسيس ٣ (ب)'
+};
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let classIdByName = {}, plan = null;
+let lastFound = {}, lastExisting = new Set();
+
+const $ = id => document.getElementById(id);
+const norm = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const msg = (t, ok) => { $('msg').textContent = t || ''; $('msg').className = ok ? 'ok' : 'msg'; };
+
+// النقر على أي صف فصل يفتح قائمة طلابه
+document.addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-target]');
+  if (tr) showClass(tr.dataset.target);
+});
+
+async function doLogin() {
+  const { error } = await db.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pass').value });
+  if (error) { $('loginMsg').textContent = 'البريد أو كلمة المرور غير صحيحة'; return; }
+  start();
+}
+
+async function start() {
+  const { data: { user } } = await db.auth.getUser();
+  const { data: prof } = await db.from('profiles').select('full_name, role').eq('id', user.id).single();
+  if (!prof || !ALLOWED.includes(prof.role)) {
+    $('loginMsg').textContent = 'هذه الصفحة للمدير العام والمدير فقط';
+    await db.auth.signOut();
+    return;
+  }
+  $('who').textContent = prof.full_name;
+  $('loginBox').classList.add('hidden');
+  $('panel').classList.remove('hidden');
+  const { data: classes, error } = await db.from('classes').select('id, name');
+  if (error) return msg(error.message);
+  classes.forEach(c => classIdByName[norm(c.name)] = c.id);
+}
+
+// اسم الفصل يوجد فوق عمود "اسم الطالب" بعدة صفوف
+function classAbove(rows, r, c) {
+  for (let rr = r - 1; rr >= Math.max(0, r - 4); rr--) {
+    for (let cc = c - 2; cc <= c + 2; cc++) {
+      const v = norm(rows[rr]?.[cc]);
+      if (v && v !== 'اسم الطالب' && !/^\d+$/.test(v)) return v;
+    }
+  }
+  return '';
+}
+
+function buildPlan(wb) {
+  const found = {}, unknown = [];
+  for (const sn of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '' });
+    for (let r = 0; r < rows.length; r++) {
+      for (let c = 0; c < rows[r].length; c++) {
+        if (norm(rows[r][c]) !== 'اسم الطالب') continue;
+        const raw = classAbove(rows, r, c);
+        const target = MAP[raw];
+        if (!target) { unknown.push(raw || '(بدون اسم)'); continue; }
+        const list = found[target] || (found[target] = []);
+        for (let rr = r + 1; rr < rows.length; rr++) {
+          const val = norm(rows[rr]?.[c]);
+          if (val && !/^\d+$/.test(val)) list.push(val);
+        }
+      }
+    }
+  }
+  return { found, unknown };
+}
+
+async function onFile(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  msg('جارٍ قراءة الملف...', true);
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    const parsed = buildPlan(wb);
+    await renderPreview(parsed);
+    msg('', true);
+  } catch (err) {
+    msg('تعذّر قراءة الملف: ' + err.message);
+  }
+}
+
+async function renderPreview({ found, unknown }) {
+  const ids = Object.keys(found).map(n => classIdByName[norm(n)]).filter(Boolean);
+  const existing = new Set();
+  if (ids.length) {
+    const { data, error } = await db.from('students').select('full_name, class_id').in('class_id', ids).range(0, 9999);
+    if (error) return msg(error.message);
+    data.forEach(s => existing.add(s.class_id + '|' + norm(s.full_name)));
+  }
+  lastFound = found;
+  lastExisting = existing;
+
+  plan = [];
+  let totalAdd = 0, totalFile = 0;
+  const rowsHtml = Object.keys(found).map(target => {
+    const classId = classIdByName[norm(target)];
+    const names = found[target];
+    const unique = [...new Set(names)];
+    const dupes = names.length - unique.length;
+    if (!classId) {
+      return `<tr><td>${esc(target)}</td><td colspan="4" class="msg">هذا الفصل غير موجود في النظام</td></tr>`;
+    }
+    const toAdd = unique.filter(n => !existing.has(classId + '|' + n));
+    plan.push({ classId, target, names: toAdd });
+    totalAdd += toAdd.length; totalFile += names.length;
+    return `<tr class="clickable" data-target="${esc(target)}">
+      <td>${esc(target)}</td><td>${names.length}</td><td>${dupes}</td>
+      <td>${unique.length - toAdd.length}</td><td><b>${toAdd.length}</b></td></tr>`;
+  }).join('');
+
+  $('previewList').innerHTML = rowsHtml;
+  $('summary').textContent = `إجمالي الأسماء في الملف: ${totalFile} — سيُضاف منها: ${totalAdd}`;
+  $('unknownBox').textContent = unknown.length
+    ? `تنبيه: أعمدة لم يُتعرف على فصولها: ${[...new Set(unknown)].join('، ')}` : '';
+  $('previewCard').classList.remove('hidden');
+  $('saveCard').classList.remove('hidden');
+  $('saveBtn').disabled = totalAdd === 0;
+  closeDetail();
+}
+
+function showClass(target) {
+  const classId = classIdByName[norm(target)];
+  const names = [...new Set(lastFound[target] || [])];
+  const existingCount = names.filter(n => lastExisting.has(classId + '|' + n)).length;
+
+  document.querySelectorAll('tr.clickable').forEach(tr =>
+    tr.classList.toggle('active', tr.dataset.target === target));
+
+  $('detailTitle').textContent = `طلاب فصل: ${target}`;
+  $('detailSummary').textContent =
+    `عدد الأسماء: ${names.length} — موجود مسبقاً: ${existingCount} — سيُضاف: ${names.length - existingCount}`;
+  $('detailList').innerHTML = names.length
+    ? names.map((n, i) => {
+        const exists = lastExisting.has(classId + '|' + n);
+        return `<tr><td>${i + 1}</td><td>${esc(n)}</td>
+          <td>${exists ? '<span class="tag-old">موجود مسبقاً</span>' : '<span class="tag-new">سيُضاف</span>'}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="3">لا توجد أسماء</td></tr>';
+  $('detailCard').classList.remove('hidden');
+  $('detailCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeDetail() {
+  $('detailCard').classList.add('hidden');
+  document.querySelectorAll('tr.clickable').forEach(tr => tr.classList.remove('active'));
+}
+
+async function saveAll() {
+  if (!plan || !plan.length) return;
+  if (!confirm('حفظ الطلاب كطلاب سابقين (معفيين من رسوم القبول)؟')) return;
+  $('saveBtn').disabled = true;
+  let saved = 0;
+  try {
+    for (const block of plan) {
+      const rows = block.names.map(n => ({
+        full_name: n,
+        class_id: block.classId,
+        is_legacy: true,
+        is_boarder: false
+      }));
+      for (let i = 0; i < rows.length; i += 100) {
+        const chunk = rows.slice(i, i + 100);
+        const { error } = await db.from('students').insert(chunk);
+        if (error) throw new Error(`${block.target}: ${error.message}`);
+        saved += chunk.length;
+        msg(`جارٍ الحفظ... ${saved}`, true);
+      }
+    }
+    msg(`تم حفظ ${saved} طالباً بنجاح`, true);
+    $('previewCard').classList.add('hidden');
+    $('detailCard').classList.add('hidden');
+    $('saveCard').classList.add('hidden');
+    plan = null;
+  } catch (err) {
+    msg('توقف الحفظ: ' + err.message + ' — تم حفظ ' + saved + ' طالباً قبل الخطأ');
+    $('saveBtn').disabled = false;
+  }
+}
+
+db.auth.getSession().then(({ data }) => { if (data.session) start(); });
+</script>
+</body>
+</html>
