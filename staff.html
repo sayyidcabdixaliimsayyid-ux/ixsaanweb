@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إدارة الكادر التعليمي</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fbf7ee;color:#2a1d0a;margin:0;line-height:1.5}
+header{background:linear-gradient(120deg,#123d24,#1b6b3a);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{margin:0;font-size:20px}
+header a{color:#fbb040;font-size:14px;text-decoration:none}
+.wrap{padding:14px;max-width:720px;margin:0 auto}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 4px 12px rgba(0,0,0,.05)}
+input{font:inherit;padding:9px;border:1px solid #e8d3a2;border-radius:8px;width:100%;box-sizing:border-box}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;width:100%;margin-top:8px}
+.teacher{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #e8d3a2;text-decoration:none;color:#2a1d0a}
+.teacher:last-child{border-bottom:0}
+.teacher:hover{background:#fbf7ee}
+.teacher small{color:#6b5a3e}
+.msg{color:#b3261e;font-weight:700;min-height:20px;margin-top:8px}
+.note{color:#6b5a3e;font-size:13px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>إدارة الكادر التعليمي</h1>
+  <a href="dashboard.html">← لوحة التحكم</a>
+</header>
+
+<div id="gate" class="wrap">
+  <div class="card" style="max-width:380px;margin:30px auto">
+    <h3 style="margin-top:0;color:#1b6b3a">تسجيل الدخول</h3>
+    <input id="gEmail" type="email" placeholder="البريد الإلكتروني">
+    <input id="gPass" type="password" placeholder="كلمة المرور" style="margin-top:8px">
+    <button onclick="login()">دخول</button>
+    <div id="gateMsg" class="msg"></div>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="card">
+    <input id="search" placeholder="ابحث عن معلم بالاسم" oninput="filter()">
+    <p class="note" id="count"></p>
+    <div id="list"></div>
+    <div id="listMsg" class="msg"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY='sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const TT_ID='tt_1448_s2';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MANAGE_ROLES=['institute_general','institute_manager','exec_manager','org_manager'];
+let all=[], details={};
+
+async function login(){
+  const {error}=await db.auth.signInWithPassword({email:$('gEmail').value.trim(),password:$('gPass').value});
+  if(error){$('gateMsg').textContent='البريد أو كلمة المرور غير صحيحة';return}
+  enter();
+}
+
+async function enter(){
+  const {data:{user}}=await db.auth.getUser();
+  if(!user) return;
+  const {data:prof,error}=await db.from('profiles').select('role').eq('id',user.id).single();
+  if(error||!prof||!MANAGE_ROLES.includes(prof.role)){
+    $('gateMsg').textContent='لا تملك صلاحية الوصول إلى هذه الصفحة';
+    await db.auth.signOut();return;
+  }
+  $('gate').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  await load();
+}
+
+async function load(){
+  const [tt,rows]=await Promise.all([
+    db.from('timetables').select('data').eq('id',TT_ID).maybeSingle(),
+    db.from('teachers').select('name,full_name,job,department').range(0,9999)
+  ]);
+  if(tt.error){$('listMsg').textContent='تعذّر تحميل الجدول الدراسي: '+tt.error.message;}
+  const data=tt.data&&tt.data.data;
+  if(!data){$('listMsg').textContent='لم يُعثر على الجدول الدراسي المحفوظ';}
+  const names=data?[...new Set([...(data.tl||[]),...data.g.flat(2).map(c=>c[1])].filter(Boolean))]:[];
+  names.sort((a,b)=>a.localeCompare(b,'ar'));
+  (rows.data||[]).forEach(r=>details[r.name]=r);
+  all=names;
+  render(all);
+}
+
+function render(list){
+  $('count').textContent=`عدد الأساتذة: ${list.length}`;
+  $('list').innerHTML=list.map(n=>{
+    const d=details[n]||{};
+    const sub=[d.job,d.department].filter(Boolean).join(' — ')||'لم تُدخل البيانات بعد';
+    return `<a class="teacher" href="teacher.html?name=${encodeURIComponent(n)}">
+      <span><b>${esc(d.full_name||n)}</b><br><small>${esc(sub)}</small></span><span>←</span></a>`;
+  }).join('')||'<p class="note">لا يوجد أساتذة</p>';
+}
+
+function filter(){
+  const q=$('search').value.trim();
+  render(all.filter(n=>n.includes(q)||((details[n]||{}).full_name||'').includes(q)));
+}
+
+db.auth.getSession().then(({data})=>{ if(data.session) enter(); });
+</script>
+</body>
+</html>

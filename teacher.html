@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بيانات المعلم</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fbf7ee;color:#2a1d0a;margin:0;line-height:1.5}
+header{background:linear-gradient(120deg,#123d24,#1b6b3a);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{margin:0;font-size:20px}
+header a{color:#fbb040;font-size:14px;text-decoration:none}
+.wrap{padding:14px;max-width:720px;margin:0 auto}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 4px 12px rgba(0,0,0,.05)}
+.card h2{margin:0 0 12px;font-size:18px;color:#1b6b3a}
+.photoBox{width:150px;height:180px;border:2px dashed #e8d3a2;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 12px;background:#fbf7ee}
+.photoBox img{width:100%;height:100%;object-fit:cover}
+.photoBox span{color:#6b5a3e;font-size:14px}
+label{display:block;margin:10px 0 4px;font-size:14px;color:#6b5a3e}
+input{font:inherit;padding:9px;border:1px solid #e8d3a2;border-radius:8px;width:100%;box-sizing:border-box}
+input:disabled{background:#f3efe6;color:#6b5a3e}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;margin-top:12px;width:100%}
+.msg{color:#b3261e;font-weight:700;min-height:20px;margin-top:8px}
+.ok{color:#1b6b3a;font-weight:700}
+.note{color:#6b5a3e;font-size:13px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>بيانات المعلم</h1>
+  <a href="reports.html">← التقارير الشاملة</a>
+</header>
+
+<div id="gate" class="wrap">
+  <div class="card" style="max-width:380px;margin:30px auto">
+    <h3 style="margin-top:0;color:#1b6b3a">تسجيل الدخول</h3>
+    <input id="gEmail" type="email" placeholder="البريد الإلكتروني">
+    <input id="gPass" type="password" placeholder="كلمة المرور" style="margin-top:8px">
+    <button onclick="login()">دخول</button>
+    <div id="gateMsg" class="msg"></div>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="card">
+    <h2 id="tname"></h2>
+    <div class="photoBox">
+      <img id="photo" class="hidden" alt="صورة المعلم">
+      <span id="noPhoto">لا توجد صورة</span>
+    </div>
+    <div id="editPhotoBox" class="hidden">
+      <label>تغيير الصورة</label>
+      <input id="fPhoto" type="file" accept="image/*">
+    </div>
+
+    <label>الاسم الثلاثي</label>
+    <input id="fFull" type="text">
+    <label>العمل / المسمى الوظيفي</label>
+    <input id="fJob" type="text">
+    <label>القسم</label>
+    <input id="fDept" type="text">
+
+    <button id="saveBtn" onclick="save()" class="hidden">حفظ البيانات</button>
+    <div id="saveMsg" class="msg"></div>
+    <p id="viewNote" class="note hidden">عرض فقط: التعديل لإدارة المعهد.</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY='sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const EDIT_ROLES=['institute_general','institute_manager','exec_manager','org_manager'];
+const BUCKET='teacher-photos';
+const teacherName=new URLSearchParams(location.search).get('name')||'';
+let me=null, current=null;
+
+async function login(){
+  const {error}=await db.auth.signInWithPassword({email:$('gEmail').value.trim(),password:$('gPass').value});
+  if(error){$('gateMsg').textContent='البريد أو كلمة المرور غير صحيحة';return}
+  enter();
+}
+
+async function enter(){
+  const {data:{user}}=await db.auth.getUser();
+  if(!user) return;
+  const {data:prof,error}=await db.from('profiles').select('full_name,role').eq('id',user.id).single();
+  if(error||!prof){
+    $('gateMsg').textContent='هذا الحساب غير مرتبط بدور في النظام';
+    await db.auth.signOut();return;
+  }
+  me=prof;
+  $('gate').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  if(!teacherName){ $('tname').textContent='لم يُحدَّد المعلم'; return; }
+  $('tname').textContent=teacherName;
+  const canEdit=EDIT_ROLES.includes(prof.role);
+  ['fFull','fJob','fDept'].forEach(id=>$(id).disabled=!canEdit);
+  if(canEdit){
+    $('saveBtn').classList.remove('hidden');
+    $('editPhotoBox').classList.remove('hidden');
+  } else {
+    $('viewNote').classList.remove('hidden');
+  }
+  await load();
+}
+
+async function load(){
+  const {data,error}=await db.from('teachers').select('*').eq('name',teacherName).maybeSingle();
+  if(error){ $('saveMsg').textContent='تعذّر تحميل البيانات: '+error.message; }
+  current=data||{name:teacherName};
+  $('fFull').value=current.full_name||'';
+  $('fJob').value=current.job||'';
+  $('fDept').value=current.department||'';
+  setPhoto(current.photo_path);
+}
+
+function setPhoto(path){
+  if(path){
+    const {data}=db.storage.from(BUCKET).getPublicUrl(path);
+    $('photo').src=data.publicUrl;
+    $('photo').classList.remove('hidden');
+    $('noPhoto').classList.add('hidden');
+  } else {
+    $('photo').classList.add('hidden');
+    $('noPhoto').classList.remove('hidden');
+  }
+}
+
+async function save(){
+  $('saveMsg').className='msg'; $('saveMsg').textContent='';
+  $('saveBtn').disabled=true;
+  let photo=current.photo_path||null;
+  const f=$('fPhoto').files[0];
+  if(f){
+    const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+    const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const up=await db.storage.from(BUCKET).upload(path,f,{contentType:f.type,upsert:false});
+    if(up.error){ $('saveMsg').textContent='تعذّر رفع الصورة: '+up.error.message; $('saveBtn').disabled=false; return; }
+    photo=path;
+  }
+  const row={
+    name:teacherName,
+    full_name:$('fFull').value.trim(),
+    job:$('fJob').value.trim(),
+    department:$('fDept').value.trim(),
+    photo_path:photo,
+    updated_by:me.full_name,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await db.from('teachers').upsert(row);
+  $('saveBtn').disabled=false;
+  if(error){ $('saveMsg').textContent='تعذّر الحفظ: '+error.message; return; }
+  current=row;
+  setPhoto(photo);
+  $('fPhoto').value='';
+  $('saveMsg').className='ok';
+  $('saveMsg').textContent='تم الحفظ ✓';
+}
+
+db.auth.getSession().then(({data})=>{ if(data.session) enter(); });
+</script>
+</body>
+</html>

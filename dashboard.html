@@ -158,8 +158,9 @@ const TILES = {
   attendance: { t:'الحضور والغياب',            d:'تسجيل الغياب اليومي والأسبوعي',   soon:true },
   certs:      { t:'الإفادات والشهادات',        d:'إفادة قيد وشهادة حسن سيرة',      soon:true },
   contact:    { t:'سجل التواصل وأولياء الأمور', d:'الرسائل والإشعارات',           soon:true },
-  staff:      { t:'إدارة الكادر التعليمي',     d:'المعلمون والتكليفات والأداء',      soon:true },
-  reports:    { t:'التقارير الشاملة',          d:'النجاح والرسوب والتسجيل',         soon:true },
+  staff:      { t:'إدارة الكادر التعليمي',     d:'بيانات المعلمين وتعديلها',         c:'c-green', href:'staff.html' },
+  myprofile:  { t:'بياناتي الشخصية',           d:'اسمي الثلاثي وعملي وقسمي وصورتي',  c:'c-orange', href:'teacher.html' },
+  reports:    { t:'التقارير الشاملة',          d:'مالية وطلاب وأساتذة وعناوين',     c:'c-dark', href:'reports.html' },
   announce:   { t:'الإعلانات والتعاميم',       d:'نشر قرار يظهر للجميع',            soon:true },
   activity:   { t:'سجل الأنشطة',               d:'من فعل ماذا ومتى',                 soon:true },
   receipts:   { t:'سندات القبض',               d:'إصدار سند قبض لكل دفعة',          soon:true },
@@ -194,7 +195,7 @@ ROLE_NAMES.teacher = 'معلم';
 TILES.attendance = {t:'الحضور والغياب', d:'سجل الحضور والغياب لكل طالب', c:'c-blue', href:'attendance.html'};
 TILES.timetable  = {t:'الجدول الدراسي', d:'عرض الجدول، وتحضير حصص المعلمين', c:'c-green', href:'timetable.html'};
 ICONS.timetable = '🗓️';
-ROLE_TILES.teacher = ['timetable'];
+ROLE_TILES.teacher = [];
 for (const r of Object.keys(ROLE_TILES)) {
   if (!ROLE_TILES[r].includes('timetable')) ROLE_TILES[r].push('timetable');
 }
@@ -228,7 +229,7 @@ async function doLogout() {
 
 async function start() {
   const { data: { user } } = await db.auth.getUser();
-  const { data: prof, error } = await db.from('profiles').select('full_name, role').eq('id', user.id).single();
+  const { data: prof, error } = await db.from('profiles').select('full_name, role, teacher_keys').eq('id', user.id).single();
   if (error || !prof || !ROLE_TILES[prof.role]) {
     $('loginMsg').textContent = 'هذا الحساب غير مرتبط بدور في النظام';
     await db.auth.signOut();
@@ -239,12 +240,16 @@ async function start() {
   $('who').textContent = `مرحباً، ${prof.full_name}`;
   $('roleName').textContent = ROLE_NAMES[prof.role];
   setTicker();
-  renderTiles(prof.role);
+  renderTiles(prof);
   if (STATS_ROLES.includes(prof.role)) loadStats();
 }
 
-function renderTiles(role) {
-  $('grid').innerHTML = ROLE_TILES[role].map((key, i) => {
+function renderTiles(prof) {
+  // كل من له تكليف تدريس يرى بياناته الشخصية، بغض النظر عن دوره الإداري
+  const keys=[...ROLE_TILES[prof.role]];
+  if ((prof.teacher_keys||[]).length && !keys.includes('myprofile')) keys.unshift('myprofile');
+  const myName=(prof.teacher_keys||[])[0]||'';
+  $('grid').innerHTML = keys.map((key, i) => {
     const t = TILES[key];
     const delay = (i * 0.07).toFixed(2);
     if (t.soon) {
@@ -252,7 +257,8 @@ function renderTiles(role) {
         <span class="badge">قريباً</span>
         <span class="ic">${ICONS[key] || '⏳'}</span><div class="tt">${t.t}</div><div class="ds">${t.d}</div></div>`;
     }
-    return `<a class="tile ${t.c}" href="${t.href}" style="animation-delay:${delay}s">
+    const href = key==='myprofile' ? 'teacher.html?name='+encodeURIComponent(myName) : t.href;
+    return `<a class="tile ${t.c}" href="${href}" style="animation-delay:${delay}s">
       <span class="ic">${ICONS[key] || '📌'}</span><div class="tt">${t.t}</div><div class="ds">${t.d}</div></a>`;
   }).join('');
 }

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>التقارير الشاملة</title>
+<style>
+body{font-family:Tahoma,Cairo,sans-serif;background:#fbf7ee;color:#2a1d0a;margin:0;line-height:1.5}
+header{background:linear-gradient(120deg,#123d24,#1b6b3a);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{margin:0;font-size:20px}
+header a{color:#fbb040;font-size:14px;text-decoration:none}
+.wrap{padding:14px;max-width:1000px;margin:0 auto}
+.card{background:#fff;border:1px solid #e8d3a2;border-radius:14px;padding:14px;margin:12px 0;box-shadow:0 4px 12px rgba(0,0,0,.05)}
+.card h2{margin:0 0 10px;font-size:18px;color:#1b6b3a}
+.card h3{font-size:15px;margin:14px 0 6px;color:#6b5a3e}
+input,select{font:inherit;padding:8px;border:1px solid #e8d3a2;border-radius:8px;margin:4px;max-width:100%}
+button{font:inherit;background:#1b6b3a;color:#fff;border:0;border-radius:10px;padding:9px 16px;cursor:pointer;width:100%;margin-top:8px}
+table{border-collapse:collapse;width:100%;margin-top:8px}
+th,td{border-bottom:1px solid #e8d3a2;padding:7px;text-align:start;font-size:14px}
+th{background:#fbb040}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:8px}
+.kpi{background:#fbf7ee;border:1px solid #e8d3a2;border-radius:12px;padding:10px;text-align:center;font-size:14px}
+.kpi b{display:block;font-size:22px;color:#1b6b3a}
+.note{color:#6b5a3e;font-size:13px;margin:6px 0}
+.msg{color:#b3261e;font-weight:700;min-height:20px}
+.hidden{display:none!important}
+ul{margin:4px 0;padding-inline-start:22px;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>التقارير الشاملة</h1>
+  <a href="dashboard.html">← لوحة التحكم</a>
+</header>
+
+<div id="gate" class="wrap">
+  <div class="card" style="max-width:380px;margin:30px auto">
+    <h3 style="margin-top:0;color:#1b6b3a">تسجيل الدخول</h3>
+    <input id="gEmail" type="email" placeholder="البريد الإلكتروني" style="width:100%">
+    <input id="gPass" type="password" placeholder="كلمة المرور" style="width:100%">
+    <button onclick="login()">دخول</button>
+    <div id="gateMsg" class="msg"></div>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="note" id="who"></div>
+  <div id="loadMsg" class="msg"></div>
+
+  <section class="card">
+    <h2>١. التقرير المالي</h2>
+    <label>الشهر <select id="month" onchange="renderFinance()"></select></label>
+    <div class="grid" id="finance"></div>
+    <p class="note">المطلوب: 9000 شهرياً للطالب غير الداخلي، و20000 شهرياً للداخلي. يُحسب على الطلاب المقبولين فقط، والمحصّل للشهر المختار يشمل الدفعات الشهرية فقط.</p>
+  </section>
+
+  <section class="card">
+    <h2>٢. الطلاب</h2>
+    <div class="grid" id="stu"></div>
+    <h3>توزيع المقبولين على الفصول</h3>
+    <table id="stuClass"></table>
+  </section>
+
+  <section class="card">
+    <h2>٣. الأساتذة وهيئة التدريس</h2>
+    <div id="staff"></div>
+  </section>
+
+  <section class="card">
+    <h2>٤. العملية التعليمية ونتائج الاختبارات</h2>
+    <div id="edu"></div>
+  </section>
+
+  <section class="card">
+    <h2>٥. الكتب المنجزة لكل فصل</h2>
+    <p class="note">غير متوفر بعد: تحتاج إلى بيانات المناهج والكتب لكل مرحلة.</p>
+  </section>
+
+  <section class="card">
+    <h2>٦. الطلاب حسب الجنس</h2>
+    <p class="note">غير متوفر بعد: لم يُضف حقل الجنس إلى بيانات الطلاب.</p>
+  </section>
+
+  <section class="card">
+    <h2>٧. الأحياء والعناوين</h2>
+    <p class="note">تُجمع العناوين كما هي، فاختلاف الكتابة لعنوان واحد يفصله إلى صفين.</p>
+    <div id="addr"></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://tmhfjnqujgmwayktsbnd.supabase.co';
+const SUPABASE_KEY='sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('en');
+const kpi=(label,val)=>`<div class="kpi"><b>${fmt(val)}</b>${esc(label)}</div>`;
+const RATE_BOARDER=20000, RATE_DAY=9000;
+const ALLOWED=['institute_general','institute_manager','org_manager','exec_manager'];
+const ROLE_NAMES={org_manager:'مدير المنظمة',exec_manager:'مدير التنفيذ',institute_general:'المدير العام للمعهد',institute_manager:'مدير المعهد',secretary:'السكرتير',cashier:'أمين الصندوق',student_affairs:'شؤون الطلاب',exams:'قسم الامتحانات',teacher:'معلم'};
+let D={classes:[],students:[],payments:[],history:[],profiles:[]};
+
+async function login(){
+  const {error}=await db.auth.signInWithPassword({email:$('gEmail').value.trim(),password:$('gPass').value});
+  if(error){$('gateMsg').textContent='البريد أو كلمة المرور غير صحيحة';return}
+  enter();
+}
+
+async function enter(){
+  const {data:{user}}=await db.auth.getUser();
+  if(!user) return;
+  const {data:prof,error}=await db.from('profiles').select('full_name,role').eq('id',user.id).single();
+  if(error||!prof||!ALLOWED.includes(prof.role)){
+    $('gateMsg').textContent='لا تملك صلاحية الوصول إلى هذه الصفحة';
+    await db.auth.signOut();return;
+  }
+  $('gate').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('who').textContent=prof.full_name+' — '+(ROLE_NAMES[prof.role]||'');
+  await loadAll();
+}
+
+async function loadAll(){
+  const [cl,st,pay,hist,pr,tt]=await Promise.all([
+    db.from('classes').select('id,name,sort_order').order('sort_order').range(0,9999),
+    db.from('students').select('id,full_name,class_id,is_boarder,is_legacy,admitted,status,address').range(0,9999),
+    db.from('payments').select('student_id,month,amount,kind').range(0,9999),
+    db.from('class_history').select('student_id,class_name,school_year,result').range(0,9999),
+    db.from('profiles').select('full_name,role,teacher_keys').range(0,9999),
+    db.from('timetables').select('data').eq('id','tt_1448_s2').maybeSingle()
+  ]);
+  const failed=[cl,st,pay,hist,pr,tt].filter(r=>r.error).map(r=>r.error.message);
+  $('loadMsg').textContent=failed.length?'تعذّر تحميل بعض البيانات: '+failed.join(' | '):'';
+  D={classes:cl.data||[],students:st.data||[],payments:pay.data||[],history:hist.data||[],profiles:pr.data||[],tt:(tt.data&&tt.data.data)||null};
+  buildMonths();
+  renderFinance();
+  renderStudents();
+  renderStaff();
+  renderEducation();
+  renderAddresses();
+}
+
+function buildMonths(){
+  const cur=new Date().toISOString().slice(0,7);
+  const months=[...new Set([...D.payments.map(p=>p.month).filter(Boolean),cur])].sort();
+  $('month').innerHTML=months.map(m=>`<option ${m===cur?'selected':''}>${esc(m)}</option>`).join('');
+}
+
+function renderFinance(){
+  const m=$('month').value;
+  const adm=D.students.filter(s=>s.admitted);
+  const paid={};
+  D.payments.forEach(p=>{
+    if(p.month===m && p.kind==='monthly') paid[p.student_id]=(paid[p.student_id]||0)+Number(p.amount||0);
+  });
+  let due=0,got=0,full=0,part=0,none=0;
+  adm.forEach(s=>{
+    const d=s.is_boarder?RATE_BOARDER:RATE_DAY;
+    const a=paid[s.id]||0;
+    due+=d; got+=a;
+    if(a>=d) full++; else if(a>0) part++; else none++;
+  });
+  const allTime=D.payments.reduce((t,p)=>t+Number(p.amount||0),0);
+  $('finance').innerHTML=[
+    kpi('الطلاب المقبولون',adm.length),
+    kpi('سدّدوا كاملاً',full),
+    kpi('سدّدوا جزئياً',part),
+    kpi('لم يسدّدوا',none),
+    kpi('إجمالي المطلوب لهذا الشهر',due),
+    kpi('إجمالي المحصّل لهذا الشهر',got),
+    kpi('المتبقي لهذا الشهر',due-got),
+    kpi('إجمالي المحصّل منذ البداية',allTime)
+  ].join('');
+}
+
+function renderStudents(){
+  const S=D.students;
+  $('stu').innerHTML=[
+    kpi('إجمالي الطلاب',S.length),
+    kpi('المقبولون',S.filter(s=>s.admitted).length),
+    kpi('بانتظار تسديد القبول',S.filter(s=>s.status==='pending_fee').length),
+    kpi('الداخليون',S.filter(s=>s.is_boarder).length),
+    kpi('غير الداخليين',S.filter(s=>!s.is_boarder).length),
+    kpi('الطلاب السابقون',S.filter(s=>s.is_legacy).length)
+  ].join('');
+  const rows=D.classes.map(c=>{
+    const ss=S.filter(s=>s.class_id===c.id && s.admitted);
+    return `<tr><td>${esc(c.name)}</td><td>${ss.length}</td><td>${ss.filter(s=>s.is_boarder).length}</td><td>${ss.filter(s=>!s.is_boarder).length}</td></tr>`;
+  }).join('');
+  const none=S.filter(s=>!s.class_id && s.admitted).length;
+  $('stuClass').innerHTML=`<tr><th>الفصل</th><th>المقبولون</th><th>داخلي</th><th>غير داخلي</th></tr>`+rows+
+    (none?`<tr><td>بدون فصل</td><td>${none}</td><td></td><td></td></tr>`:'');
+}
+
+function renderStaff(){
+  // الأساتذة من الجدول الدراسي المحفوظ (قائمة المعلمين + كل معلم ظهر في الخانات)
+  const tt=D.tt||{g:[],tl:[]};
+  const teachers=[...new Set([...(tt.tl||[]),...tt.g.flat(2).map(c=>c[1])].filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'ar'));
+  // الإداريون من الحسابات (كل من ليس دوره معلماً)
+  const A=D.profiles.filter(p=>p.role!=='teacher');
+  $('staff').innerHTML=
+    `<div class="grid">${kpi('عدد الأساتذة (من الجدول الدراسي)',teachers.length)}${kpi('عدد الإداريين والموظفين',A.length)}</div>`+
+    (D.tt?'':'<p class="note">لم يُعثر على الجدول الدراسي المحفوظ، القائمة فارغة.</p>')+
+    `<h3>الأساتذة</h3><ul>${teachers.map(t=>`<li><a href="teacher.html?name=${encodeURIComponent(t)}">${esc(t)}</a></li>`).join('')}</ul>`+
+    `<h3>الإداريون والموظفون</h3><ul>${A.map(p=>`<li>${esc(p.full_name)} — ${esc(ROLE_NAMES[p.role]||p.role)}</li>`).join('')}</ul>`;
+}
+
+function renderEducation(){
+  if(!D.history.length){
+    $('edu').innerHTML='<p class="note">لا توجد نتائج اختبارات مسجّلة في النظام بعد.</p>';
+    return;
+  }
+  const g={};
+  D.history.forEach(h=>{const k=(h.school_year||'—')+'|'+(h.result||'—'); g[k]=(g[k]||0)+1;});
+  const rows=Object.entries(g).map(([k,n])=>{const [y,r]=k.split('|');return `<tr><td>${esc(y)}</td><td>${esc(r)}</td><td>${n}</td></tr>`}).join('');
+  $('edu').innerHTML=`<table><tr><th>السنة الدراسية</th><th>النتيجة</th><th>عدد الطلاب</th></tr>${rows}</table>`;
+}
+
+function renderAddresses(){
+  const counts={}; let none=0;
+  D.students.forEach(s=>{
+    const a=String(s.address||'').trim();
+    if(!a){none++;return}
+    counts[a]=(counts[a]||0)+1;
+  });
+  const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([a,n])=>`<tr><td>${esc(a)}</td><td>${n}</td></tr>`).join('');
+  $('addr').innerHTML=`<p class="note">لم يُدخل العنوان لـ ${fmt(none)} طالباً.</p>`+
+    `<table><tr><th>العنوان</th><th>عدد الطلاب</th></tr>${rows||'<tr><td colspan="2">لا توجد عناوين مسجّلة</td></tr>'}</table>`;
+}
+
+db.auth.getSession().then(({data})=>{ if(data.session) enter(); });
+</script>
+</body>
+</html>
