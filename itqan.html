@@ -767,6 +767,74 @@ RV.halaqat=()=>{
   return h;
 };
 
+/* طباعة عامة A4 بترويسة المدرسة */
+function printDoc(title, bodyHtml, bid){
+  const img=BANNERS[brIdx(bid||scope())]||BANNERS[0];
+  const html=`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>
+@page{size:A4;margin:14mm}
+body{font-family:Tajawal,Arial,sans-serif;color:#111;margin:0;font-size:14px}
+.hd{text-align:center;border-bottom:3px solid #14532d;padding-bottom:10px;margin-bottom:14px}
+.hd img{max-height:120px;max-width:100%}
+h1{font-size:22px;color:#14532d;margin:10px 0 4px}
+h2{font-size:18px;color:#14532d;margin:14px 0 6px}
+.meta{font-size:14px;color:#333}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:8px}
+th,td{border:1px solid #777;padding:6px 8px;text-align:right;vertical-align:top}
+th{background:#e7f2ea}
+.n{width:40px;text-align:center}
+.fc{display:inline-block;border:1px solid #888;border-radius:8px;padding:8px 12px;margin:4px;min-width:150px}
+.fc span{display:block;font-size:12px;color:#444}
+.fc b{font-size:18px}
+.sec{page-break-after:always}
+.sec:last-child{page-break-after:auto}
+</style></head><body>
+<div class="hd"><img src="${img}" alt=""><h1>${esc(title)}</h1></div>
+${bodyHtml}
+<script>window.onload=function(){window.print()};<\/script>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w) return msg('المتصفح منع النافذة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.');
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+/* طباعة التقرير المالي المعروض (شهري أو سنوي) */
+function printFinance(){
+  const el=document.querySelector('.fin'); if(!el) return;
+  const b=brOf(scope());
+  const c=el.cloneNode(true);
+  c.querySelectorAll('button,select,input,label,.keepRO,.card').forEach(x=>x.remove());
+  const isYear=(V.finView||'month')==='year';
+  const title=isYear?`التقرير السنوي ${V.year||new Date().getFullYear()}`:`التقرير المالي — ${MONTHS_AR[Number((V.month||monthNow()).slice(5))-1]} ${(V.month||monthNow()).slice(0,4)}`;
+  printDoc(title, c.innerHTML, b?.id);
+}
+
+/* كشف السداد لكل حلقة: من سدّد ومن لم يسدّد في الشهر المحدد */
+function printPayments(){
+  const b=brOf(scope()); if(!b) return;
+  const list=filtered(b.id);
+  const mk=V.month||monthNow();
+  const mLabel=`${MONTHS_AR[Number(mk.slice(5))-1]} ${mk.slice(0,4)}`;
+  const hs=HA.filter(h=>h.branch_id===b.id&&(V.fh==='all'||h.id===V.fh)&&(V.ft==='all'||h.teacher_id===V.ft));
+  const groups=hs.map(h=>({h,ss:list.filter(s=>s.halaqa_id===h.id)}));
+  const none=list.filter(s=>!s.halaqa_id||!HA.some(h=>h.id===s.halaqa_id));
+  if(none.length) groups.push({h:{name:'بدون حلقة',teacher_id:null},ss:none});
+  const body=groups.map(({h,ss})=>{
+    const sorted=[...ss].sort((x,y)=>x.full_name.localeCompare(y.full_name,'ar'));
+    const paid=sorted.filter(s=>!s.exempt&&isPaid(s.id));
+    const unpaid=sorted.filter(s=>!s.exempt&&!isPaid(s.id));
+    const ex=sorted.filter(s=>s.exempt);
+    const cell=arr=>arr.map((s,i)=>`${i+1}. ${esc(s.full_name)} <span style="color:#555">(${fmtN(feeOf(s))})</span>`).join('<br>')||'—';
+    return `<div class="sec"><h2>${esc(h.name)} — المعلم: ${esc(teName(h.teacher_id))}</h2>
+      <div class="meta">عدد الطلاب: ${sorted.length} — سدّد: ${paid.length} — لم يسدّد: ${unpaid.length}${ex.length?` — معفى: ${ex.length}`:''}</div>
+      <table><tr><th>سدّد (${paid.length})</th><th>لم يسدّد (${unpaid.length})</th></tr>
+      <tr><td>${cell(paid)}</td><td>${cell(unpaid)}</td></tr></table>
+      ${ex.length?`<div class="meta">المعفون: ${ex.map(s=>esc(s.full_name)).join('، ')}</div>`:''}
+    </div>`;
+  }).join('')||'<p>لا يوجد طلاب</p>';
+  printDoc(`كشف السداد — ${mLabel}`, body, b.id);
+}
+
 function printHalaqa(hid){
   const h=haOf(hid); if(!h) return;
   const tch=TE.find(x=>x.id===h.teacher_id);
@@ -1124,7 +1192,7 @@ const incomeOf=(bid,mk)=>{const ids=new Set(ST.filter(s=>s.branch_id===bid).map(
 /* ===== التقرير المالي السنوي ===== */
 function finReport(b,canEdit){
   const view=V.finView||'month';
-  const tabs=`<div class="finTabs" style="display:flex;gap:8px;flex-wrap:wrap"><button class="b ${view==='month'?'g':'m'}" onclick="setV('finView','month')">التقرير الشهري</button><button class="b ${view==='year'?'g':'m'}" onclick="setV('finView','year')">التقرير السنوي</button></div>`;
+  const tabs=`<div class="finTabs" style="display:flex;gap:8px;flex-wrap:wrap"><button class="b ${view==='month'?'g':'m'}" onclick="setV('finView','month')">التقرير الشهري</button><button class="b ${view==='year'?'g':'m'}" onclick="setV('finView','year')">التقرير السنوي</button><button class="b m keepRO" onclick="printFinance()">طباعة التقرير</button></div>`;
   if(view==='month'){
     const mk=V.month||monthNow();
     const mLabel=`${MONTHS_AR[Number(mk.slice(5))-1]} ${mk.slice(0,4)}`;
@@ -1137,6 +1205,8 @@ function finReport(b,canEdit){
         <div class="fc info"><span>الربح</span><b>${fmtN(rem)}</b></div>
       </div>
       <p class="note">يعرض الشهر المحدد في خانة «الشهر» أعلاه، وهو الشهر الجاري افتراضاً. الوارد = الرسوم المسدّدة في الشهر.</p>
+      <div><button class="b keepRO ${V.expOpen?'m':'g'}" onclick="setV('expOpen',!V.expOpen)">${V.expOpen?'إخفاء جدول المصروفات':'إدخال المصروفات الشهرية'}</button></div>
+      ${V.expOpen?expEntry(b,Number(mk.slice(0,4)),canEdit):''}
     </div>`;
   }
   const y=V.year||new Date().getFullYear();
@@ -1212,7 +1282,8 @@ RV.finance=()=>{
   const need=due.reduce((a,s)=>a+feeOf(s),0);
   const coll=PY.filter(p=>p.month===V.month&&list.some(s=>s.id===p.student_id)).reduce((a,p)=>a+Number(p.amount||0),0);
   const exL=list.filter(s=>s.exempt||(s.monthly_fee!=null&&Number(s.monthly_fee)!==Number(b.monthly_fee)));
-  return finReport(b,canEdit)+`<div class="card"><div class="row"><b>الرسم الأصلي: ${b.monthly_fee}</b><b>رسوم القبول: ${b.admission_fee}</b>
+  return finReport(b,canEdit)+`<div class="card"><button class="b g keepRO" onclick="printPayments()">طباعة كشف السداد: من سدّد ومن لم يسدّد لكل حلقة</button></div>
+  <div class="card"><div class="row"><b>الرسم الأصلي: ${b.monthly_fee}</b><b>رسوم القبول: ${b.admission_fee}</b>
     <span class="ok">سدّد هذا الشهر: ${paidN} من ${due.length}</span><span>المطلوب: ${need}</span><span>المحصّل: ${coll}</span>
     <button class="b g keepRO" onclick="setV('fx',!V.fx)">${V.fx?'إخفاء القائمة':'قائمة المعفيين والمخفّضين'} (${exL.length})</button></div></div>
   ${V.fx?`<div class="card"><h3>المعفيون والمخفّضون</h3><div class="tw"><table><tr><th>الطالب</th><th>الحلقة</th><th>المطلوب شهرياً</th><th>الحالة</th><th>ملاحظة</th></tr>
