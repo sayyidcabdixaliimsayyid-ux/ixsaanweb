@@ -281,10 +281,10 @@ const KIND={rw:'حلقة القراءة والكتابة',quran:'حلقة قرآ
 const GN=new Proxy({boy:'طالب',girl:'طالبة'},{get:(t,k)=>t[k]||'—'});
 const TABS={
   association:[['branches','مدارس الاتقان لتحفيظ القرآن','c-green','🏫','الفروع وحلقاتها وطلابها'],['addbranch','إدارة فرع','c-blue','🛠️','بيانات الفروع وإضافة فرع'],['people','بيانات المدراء والمعلمين','c-gold','👥','المدراء والمعلمون'],['reports','تقارير شاملة','c-dark','📊','ملخص كل الفروع']],
-  branch:[['branches','مدارس الاتقان لتحفيظ القرآن','c-green','🏫','حلقات الفرع وطلابها'],['register','تسجيل وقبول','c-orange','📝','استمارة طالب جديد'],['complete','استكمال بيانات الطلاب','c-blue','✏️','الجنس والحلقة والبيانات الناقصة'],['halaqat','الحلقات','c-teal','📚','الحلقات والطلاب'],['progress','المتابعة','c-purple','📈','الحفظ والقراءة والكتابة'],['finance','المالية','c-red','💰','السداد والمتأخرات'],['people','المعلمون','c-gold','👥','إضافة المعلمين']],
+  branch:[['branches','حلقات الفرع الأول','c-green','🏫','حلقات الفرع وطلابها'],['register','تسجيل وقبول','c-orange','📝','استمارة طالب جديد'],['complete','استكمال بيانات الطلاب','c-blue','✏️','الجنس والحلقة والبيانات الناقصة'],['progress','المتابعة','c-purple','📈','الحفظ والقراءة والكتابة'],['finance','المالية','c-red','💰','السداد والمتأخرات'],['people','المعلمون','c-gold','👥','إضافة المعلمين']],
   cashier:[['finance','المالية','c-red','💰','السداد والمتأخرات']]
 };
-const BRANCH_TABS=['halaqat','register','complete','progress','finance','people'];
+const BRANCH_TABS=['register','complete','progress','finance','people'];
 const DEFAULT_TAB={association:'branches',branch:'branches',cashier:'finance'};
 
 let ME=null, BR=[], TE=[], HA=[], ST=[], PY=[], PEOPLE=[], MG=[], EX=[];
@@ -300,7 +300,7 @@ const msg=(t,ok)=>{$('msg').className=ok?'ok':'msg';$('msg').textContent=t};
 const isPaid=sid=>PY.some(p=>p.student_id===sid&&p.month===V.month);
 const setV=(k,v)=>{V[k]=v;paint()};
 const go=t=>{V.tab=t;V.show='';V.hl='';paint()};
-const openBranch=id=>{V.branch=id;V.fh='all';V.ft='all';V.tab='halaqat';paint()};
+const openBranch=id=>{V.branch=id;V.fh='all';V.ft='all';V.tab='branches';V.show=id;paint()};
 const chBranch=v=>{V.branch=v;V.fh='all';V.ft='all';paint()};
 const noB=()=>'<div class="card note">أضف فرعاً أولاً من تبويب «إضافة فرع».</div>';
 
@@ -413,7 +413,7 @@ function pickerHtml(){
   const hs=HA.filter(h=>h.branch_id===b), ts=TE.filter(t=>t.branch_id===b);
   let h='';
   if(assoc) h+=`<div class="row"><label>الفرع: <select onchange="chBranch(this.value)">${BR.map(x=>`<option value="${x.id}" ${x.id===b?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label></div>`;
-  if(['halaqat','progress','finance'].includes(V.tab)){
+  if(['progress','finance'].includes(V.tab)){
     h+=`<div class="row" style="margin-top:8px">
       <label>الحلقة: <select onchange="pickHal(this.value)"><option value="all">الكل</option>${hs.map(x=>`<option value="${x.id}" ${V.fh===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
       <label>المعلم: <select onchange="pickTea(this.value)"><option value="all">الكل</option>${ts.map(t=>`<option value="${t.id}" ${V.ft===t.id?'selected':''}>${esc(t.full_name)}</option>`).join('')}</select></label>
@@ -472,11 +472,22 @@ function showBranch(bid){
   const hs=HA.filter(h=>h.branch_id===bid);
   return `${logoHeader(b)}
   ${rk()==='branch'?'':`<div class="showTop"><button class="b m" onclick="leaveShow()">← كل الفروع</button></div>`}
+  ${rk()==='branch'?addHalaqaCard(bid):''}
   <div class="hGrid">${hs.map(h=>{
     const t=TE.find(x=>x.id===h.teacher_id);
     const n=ST.filter(s=>s.halaqa_id===h.id).length;
     return `<button class="hBtn" onclick="openHalaqa('${h.id}')"><span class="hName">${esc(h.name)}</span><span class="hTeacher">المشرف: ${esc(t?.full_name||'لم يُعيَّن')}</span><span class="hCount">${n} طالب</span></button>`;
   }).join('')||'<p class="note">لا توجد حلقات بعد</p>'}</div>`;
+}
+function addHalaqaCard(bid){
+  const ts=TE.filter(x=>x.branch_id===bid);
+  return `<div class="card" style="margin:10px 0"><button class="b g" onclick="setV('addH',!V.addH)">${V.addH?'إخفاء النموذج':'＋ إضافة حلقة'}</button>
+  ${V.addH?`<div class="row" style="margin-top:10px">
+    <input id="hName" placeholder="اسم الحلقة، مثال: حلقة الفجر">
+    <select id="hKind"><option value="quran">حلقة قرآن</option><option value="rw">حلقة القراءة والكتابة</option></select>
+    <select id="hTeacher"><option value="">بدون معلم</option>${ts.map(x=>`<option value="${x.id}">${esc(x.full_name)}</option>`).join('')}</select>
+    <input id="hCap" type="number" placeholder="السعة" value="20">
+    <button class="b g" onclick="addHalaqa()">حفظ الحلقة</button></div>`:''}</div>`;
 }
 function halaqaView(bid,hid){
   const h=haOf(hid);
@@ -800,8 +811,12 @@ ${bodyHtml}
 
 /* طباعة التقرير المالي المعروض (شهري أو سنوي) */
 function printFinance(){
+  const b=brOf(scope()); if(!b) return;
+  if((V.finView||'month')==='month'){
+    const mk=V.month||monthNow();
+    return printDoc(`التقرير المالي التفصيلي — ${mkLabel(mk)}`, monthlyBody(b,mk), b.id);
+  }
   const el=document.querySelector('.fin'); if(!el) return;
-  const b=brOf(scope());
   const c=el.cloneNode(true);
   c.querySelectorAll('button,select,input,label,.keepRO,.card').forEach(x=>x.remove());
   const isYear=(V.finView||'month')==='year';
@@ -1190,30 +1205,125 @@ const expTotal=(bid,mk)=>EX.filter(x=>x.branch_id===bid&&x.month===mk).reduce((a
 const incomeOf=(bid,mk)=>{const ids=new Set(ST.filter(s=>s.branch_id===bid).map(s=>s.id));return PY.filter(p=>p.month===mk&&ids.has(p.student_id)).reduce((a,p)=>a+Number(p.amount||0),0)};
 
 /* ===== التقرير المالي السنوي ===== */
+const mkLabel=mk=>`${MONTHS_AR[Number(mk.slice(5))-1]} ${mk.slice(0,4)}`;
+const prevMk=mk=>{const y=+mk.slice(0,4), m=+mk.slice(5); const d=new Date(y,m-2,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
+/* أرقام الشهر لكل فرع */
+function monthFacts(bid,mk){
+  const br=brOf(bid);
+  const ss=ST.filter(s=>s.branch_id===bid);
+  const payOf=sid=>PY.filter(p=>p.student_id===sid&&p.month===mk).reduce((a,p)=>a+Number(p.amount||0),0);
+  const act=ss.filter(s=>!s.exempt);
+  let full=0,part=0,none=0;
+  act.forEach(s=>{const pd=payOf(s.id),f=feeOf(s); if(f>0&&pd>=f) full++; else if(pd>0) part++; else none++;});
+  const inc=incomeOf(bid,mk), exp=expTotal(bid,mk);
+  return {
+    inc, exp, rem:inc-exp,
+    due:act.reduce((a,s)=>a+feeOf(s),0), coll:inc,
+    full, part, none,
+    disc:act.filter(s=>s.monthly_fee!=null&&Number(s.monthly_fee)<Number(br?.monthly_fee||0)).length,
+    exempt:ss.filter(s=>s.exempt).length,
+    payers:ss.filter(s=>payOf(s.id)>0).length,
+    cats:EXP_CATS.map(c=>({c,v:expOf(bid,mk,c)||0})).filter(x=>x.v>0)
+  };
+}
+/* مقارنة الشهر بالشهر السابق: الأرقام والأسباب الظاهرة من البيانات */
+function compareLines(bid,mk){
+  const pm=prevMk(mk), a=monthFacts(bid,mk), p=monthFacts(bid,pm);
+  if(!a.inc&&!a.exp&&!p.inc&&!p.exp) return null;
+  const sign=(n,unit='')=>n>0?`ارتفعت بمقدار ${fmtN(n)}${unit}`:n<0?`انخفضت بمقدار ${fmtN(-n)}${unit}`:'لم تتغير';
+  const L=[];
+  const dInc=a.inc-p.inc, dExp=a.exp-p.exp, dRem=a.rem-p.rem, dPay=a.payers-p.payers;
+  L.push(`الواردات ${sign(dInc)} (من ${fmtN(p.inc)} في ${mkLabel(pm)} إلى ${fmtN(a.inc)} في ${mkLabel(mk)}).`);
+  if(dPay) L.push(`السبب: عدد الطلاب الذين سدّدوا ${dPay>0?'زاد':'نقص'} من ${p.payers} إلى ${a.payers}.`);
+  else if(dInc) L.push(`عدد الطلاب الذين سدّدوا لم يتغيّر (${a.payers})، فالتغيّر في مبالغ السداد نفسها.`);
+  if(a.full!==p.full) L.push(`عدد الطلاب الذين سدّدوا كاملاً ${a.full>p.full?'زاد':'نقص'} من ${p.full} إلى ${a.full}.`);
+  L.push(`المصروفات ${sign(dExp)} (من ${fmtN(p.exp)} إلى ${fmtN(a.exp)}).`);
+  const names=new Set([...p.cats.map(x=>x.c),...a.cats.map(x=>x.c)]);
+  let best=null;
+  names.forEach(c=>{const v1=a.cats.find(x=>x.c===c)?.v||0, v0=p.cats.find(x=>x.c===c)?.v||0, d=v1-v0; if(!best||Math.abs(d)>Math.abs(best.d)) best={c,d,v0,v1};});
+  if(best&&best.d) L.push(`أكبر تغيّر في البنود: «${best.c}» ${best.d>0?'زاد':'نقص'} من ${fmtN(best.v0)} إلى ${fmtN(best.v1)}.`);
+  L.push(`الربح المتبقي ${sign(dRem)} (من ${fmtN(p.rem)} إلى ${fmtN(a.rem)}).`);
+  if(dRem) L.push(`تفسير الربح: ${dInc>0?`ارتفاع الواردات (+${fmtN(dInc)})`:dInc<0?`انخفاض الواردات (${fmtN(dInc)})`:'ثبات الواردات'}${dExp>0?` مع زيادة المصروفات (+${fmtN(dExp)})`:dExp<0?` مع انخفاض المصروفات (${fmtN(dExp)})`:' مع ثبات المصروفات'}.`);
+  if(a.disc!==p.disc) L.push(`عدد الطلاب المخفَّضين تغيّر من ${p.disc} إلى ${a.disc}.`);
+  if(a.exempt!==p.exempt) L.push(`عدد الطلاب المعفيين تغيّر من ${p.exempt} إلى ${a.exempt}.`);
+  return L;
+}
+function compareHtml(bid,mk){
+  const L=compareLines(bid,mk);
+  return L?`<ul>${L.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="note">لا توجد بيانات في الشهر السابق للمقارنة.</p>';
+}
+/* محتوى التقرير الشهري التفصيلي (للشاشة وللطباعة) */
+function monthlyBody(b,mk){
+  const f=monthFacts(b.id,mk);
+  return `<div class="finCards">
+      <div class="fc ok"><span>إجمالي الواردات</span><b>${fmtN(f.inc)}</b></div>
+      <div class="fc bad"><span>إجمالي المصروفات</span><b>${fmtN(f.exp)}</b></div>
+      <div class="fc info"><span>الربح المتبقي</span><b>${fmtN(f.rem)}</b></div>
+    </div>
+    <div class="tw"><table class="finT">
+      <tr><th>المطلوب</th><th>المحقّق</th><th>سدّد كاملاً</th><th>سدّد جزئياً</th><th>لم يسدّد</th><th>المخفَّضون</th><th>المعفيون</th></tr>
+      <tr><td>${fmtN(f.due)}</td><td>${fmtN(f.coll)}</td><td>${f.full}</td><td>${f.part}</td><td>${f.none}</td><td>${f.disc}</td><td>${f.exempt}</td></tr>
+    </table></div>
+    <h3>مصروفات ${mkLabel(mk)}</h3>
+    <div class="tw"><table class="finT">
+      <tr><th>البند</th><th>المبلغ</th></tr>
+      ${f.cats.map(x=>`<tr><td>${esc(x.c)}</td><td>${fmtN(x.v)}</td></tr>`).join('')||'<tr><td colspan="2" class="note">لا توجد مصروفات مسجّلة لهذا الشهر</td></tr>'}
+      <tr class="tot"><td>المجموع</td><td>${fmtN(f.exp)}</td></tr>
+    </table></div>
+    <h3>المقارنة مع ${mkLabel(prevMk(mk))}</h3>
+    ${compareHtml(b.id,mk)}
+    <p class="note" style="margin-top:8px">الربح المتبقي = الواردات − المصروفات = <b>${fmtN(f.rem)}</b></p>`;
+}
+function expMonthEntry(b,mk,canEdit){
+  return `<div class="card"><h3>مصروفات ${mkLabel(mk)}</h3>
+  <div class="tw"><table class="expT"><tr><th>البند</th><th>المبلغ</th></tr>
+  ${EXP_CATS.map((c,ci)=>{const v=expOf(b.id,mk,c);return `<tr><td>${esc(c)}</td><td><input id="exm_${ci}" type="number" min="0" value="${v??''}" ${canEdit?'':'disabled'}></td></tr>`}).join('')}
+  </table></div>
+  ${canEdit?`<div style="margin-top:10px"><button class="b g" onclick="saveExpMonth('${b.id}','${mk}')">حفظ مصروفات الشهر</button></div>`:'<p class="note">العرض فقط لأمين الصندوق.</p>'}
+  <p class="note">بعد الحفظ يظهر هذا الشهر في التقرير السنوي.</p></div>`;
+}
+async function saveExpMonth(bid,mk){
+  if(mk!==monthNow()) return msg('المصروفات تُدخل للشهر الجاري فقط');
+  const ups=[], dels=[];
+  for(let ci=0;ci<EXP_CATS.length;ci++){
+    const el=$('exm_'+ci); if(!el) continue;
+    const v=el.value.trim(), c=EXP_CATS[ci], cur=expOf(bid,mk,c);
+    if(v===''){ if(cur!==null) dels.push(c); continue; }
+    const n=Number(v);
+    if(isNaN(n)||n<0) return msg('مبلغ غير صحيح: '+c);
+    if(cur===null||cur!==n) ups.push({branch_id:bid,month:mk,category:c,amount:n});
+  }
+  if(!ups.length&&!dels.length) return msg('لا توجد تغييرات للحفظ');
+  for(const c of dels){
+    const {error}=await db.from('itqan_expenses').delete().eq('branch_id',bid).eq('month',mk).eq('category',c);
+    if(error) return msg('تعذّر الحذف: '+error.message);
+  }
+  if(ups.length){
+    const {error}=await db.from('itqan_expenses').upsert(ups,{onConflict:'branch_id,month,category'});
+    if(error) return msg('تعذّر الحفظ: '+error.message);
+  }
+  await loadAll(); msg('تم حفظ مصروفات الشهر ✓',true); paint();
+}
+
 function finReport(b,canEdit){
   const view=V.finView||'month';
   const tabs=`<div class="finTabs" style="display:flex;gap:8px;flex-wrap:wrap"><button class="b ${view==='month'?'g':'m'}" onclick="setV('finView','month')">التقرير الشهري</button><button class="b ${view==='year'?'g':'m'}" onclick="setV('finView','year')">التقرير السنوي</button><button class="b m keepRO" onclick="printFinance()">طباعة التقرير</button></div>`;
   if(view==='month'){
     const mk=V.month||monthNow();
-    const mLabel=`${MONTHS_AR[Number(mk.slice(5))-1]} ${mk.slice(0,4)}`;
-    const inc=incomeOf(b.id,mk), exp=expTotal(b.id,mk), rem=inc-exp;
+    const isCur=mk===monthNow();
     return `<div class="fin">
-      <div class="finHead"><div><h3>التقرير المالي — ${mLabel}</h3><div class="note">${esc(b.name)}</div></div>${tabs}</div>
-      <div class="finCards">
-        <div class="fc ok"><span>إجمالي الواردات</span><b>${fmtN(inc)}</b></div>
-        <div class="fc bad"><span>إجمالي المصروفات</span><b>${fmtN(exp)}</b></div>
-        <div class="fc info"><span>الربح</span><b>${fmtN(rem)}</b></div>
-      </div>
+      <div class="finHead"><div><h3>التقرير المالي — ${mkLabel(mk)}</h3><div class="note">${esc(b.name)}</div></div>${tabs}</div>
+      ${monthlyBody(b,mk)}
+      ${isCur?`<div><button class="b keepRO ${V.expOpen?'m':'g'}" onclick="setV('expOpen',!V.expOpen)">${V.expOpen?'إخفاء إدخال المصروفات':'إدخال مصروفات هذا الشهر'}</button></div>${V.expOpen?expMonthEntry(b,mk,canEdit):''}`:''}
       <p class="note">يعرض الشهر المحدد في خانة «الشهر» أعلاه، وهو الشهر الجاري افتراضاً. الوارد = الرسوم المسدّدة في الشهر.</p>
-      <div><button class="b keepRO ${V.expOpen?'m':'g'}" onclick="setV('expOpen',!V.expOpen)">${V.expOpen?'إخفاء جدول المصروفات':'إدخال المصروفات الشهرية'}</button></div>
-      ${V.expOpen?expEntry(b,Number(mk.slice(0,4)),canEdit):''}
     </div>`;
   }
   const y=V.year||new Date().getFullYear();
-  const rows=MONTHS_AR.map((m,i)=>{const mk=mKey(y,i);const inc=incomeOf(b.id,mk);const exp=expTotal(b.id,mk);return {m,mk,inc,exp,rem:inc-exp};});
+  const rows=MONTHS_AR.map((m,i)=>{const mk=mKey(y,i);const inc=incomeOf(b.id,mk);const exp=expTotal(b.id,mk);return {m,mk,inc,exp,rem:inc-exp,cmp:compareLines(b.id,mk)};});
   const T=rows.reduce((a,r)=>({inc:a.inc+r.inc,exp:a.exp+r.exp,rem:a.rem+r.rem}),{inc:0,exp:0,rem:0});
   const maxV=Math.max(1,...rows.map(r=>Math.max(r.inc,r.exp)));
   const pct=v=>Math.round(v/maxV*100);
+  const shortCmp=r=>{ if(!r.cmp) return '—'; const pm=prevMk(r.mk); const a=monthFacts(b.id,r.mk), p=monthFacts(b.id,pm); return `الواردات ${a.inc-p.inc>=0?'+':''}${fmtN(a.inc-p.inc)}، المصروفات ${a.exp-p.exp>=0?'+':''}${fmtN(a.exp-p.exp)}، الدافعون ${a.payers-p.payers>=0?'+':''}${a.payers-p.payers}`; };
   return `<div class="fin">
     <div class="finHead"><div><h3>التقرير السنوي ${y}</h3><div class="note">${esc(b.name)}</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${tabs}
@@ -1224,15 +1334,14 @@ function finReport(b,canEdit){
       <div class="fc info"><span>الربح المتبقي للسنة</span><b>${fmtN(T.rem)}</b></div>
     </div>
     <div class="tw"><table class="finT">
-      <tr><th>الشهر</th><th>الوارد</th><th>المصروفات</th><th>المتبقي</th><th>مقارنة</th></tr>
+      <tr><th>الشهر</th><th>الوارد</th><th>المصروفات</th><th>المتبقي</th><th>مقارنة</th><th>التغيّر عن الشهر السابق</th></tr>
       ${rows.map(r=>`<tr><td>${r.m}</td><td>${fmtN(r.inc)}</td><td>${fmtN(r.exp)}</td>
         <td class="${r.rem>=0?'pos':'neg'}">${fmtN(r.rem)}</td>
-        <td style="min-width:150px"><div class="bars"><i class="bi" style="width:${pct(r.inc)}%"></i></div><div class="bars"><i class="be" style="width:${pct(r.exp)}%"></i></div></td></tr>`).join('')}
-      <tr class="tot"><td>المجموع</td><td>${fmtN(T.inc)}</td><td>${fmtN(T.exp)}</td><td class="${T.rem>=0?'pos':'neg'}">${fmtN(T.rem)}</td><td></td></tr>
+        <td style="min-width:150px"><div class="bars"><i class="bi" style="width:${pct(r.inc)}%"></i></div><div class="bars"><i class="be" style="width:${pct(r.exp)}%"></i></div></td>
+        <td style="font-size:12px">${shortCmp(r)}</td></tr>`).join('')}
+      <tr class="tot"><td>المجموع</td><td>${fmtN(T.inc)}</td><td>${fmtN(T.exp)}</td><td class="${T.rem>=0?'pos':'neg'}">${fmtN(T.rem)}</td><td></td><td></td></tr>
     </table></div>
-    <p class="note">الوارد = الرسوم المسدّدة في كل شهر. الرسم الأصلي للطالب 8000 ما لم يُعدَّل فردياً.</p>
-    <div><button class="b keepRO ${V.expOpen?'m':'g'}" onclick="setV('expOpen',!V.expOpen)">${V.expOpen?'إخفاء جدول المصروفات':'إدخال المصروفات الشهرية'}</button></div>
-    ${V.expOpen?expEntry(b,y,canEdit):''}
+    <p class="note">الوارد = الرسوم المسدّدة في كل شهر. إدخال المصروفات يتم شهراً بشهر من التقرير الشهري، وكل شهر يُحفظ يظهر هنا.</p>
   </div>`;
 }
 
