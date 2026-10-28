@@ -261,6 +261,7 @@ body.ro-view #content input:not([type=month]){pointer-events:none;opacity:.7}
   <div id="stats" class="stats"></div>
   <div id="tabs" class="menu"></div>
   <div class="page">
+    <div id="topBan"></div>
     <div id="pick" class="pickRow hidden"></div>
     <div id="msg" class="msg"></div>
     <div id="content"></div>
@@ -388,7 +389,8 @@ function paint(){
   const roMsg=viewAll?'عرض فقط: هذا الحساب للاطلاع دون تعديل':'عرض فقط: الإدارة الداخلية للفرع تُدار من حساب مدير الفرع';
   const topBan=(rk()==='association'&&!V.show)?assocBanner:(rk()==='branch'&&V.tab!=='branches'?logoHeader(brOf(ME.branch_id)):'');
   $('content').setAttribute('style',themeCss(V.show||ME.branch_id||V.branch||''));
-  $('content').innerHTML=topBan+(document.body.classList.contains('ro')?`<div class="roNote">${roMsg}</div>`:'')+info+(RV[V.tab]?RV[V.tab]():'');
+  $('topBan').innerHTML=topBan;
+  $('content').innerHTML=(document.body.classList.contains('ro')?`<div class="roNote">${roMsg}</div>`:'')+info+(RV[V.tab]?RV[V.tab]():'');
   if(V.tab==='progress') loadDaily();
 }
 
@@ -413,8 +415,8 @@ function pickerHtml(){
   if(assoc) h+=`<div class="row"><label>الفرع: <select onchange="chBranch(this.value)">${BR.map(x=>`<option value="${x.id}" ${x.id===b?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label></div>`;
   if(['halaqat','progress','finance'].includes(V.tab)){
     h+=`<div class="row" style="margin-top:8px">
-      <label>الحلقة: <select onchange="setV('fh',this.value)"><option value="all">الكل</option>${hs.map(x=>`<option value="${x.id}" ${V.fh===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
-      <label>المعلم: <select onchange="setV('ft',this.value)"><option value="all">الكل</option>${ts.map(t=>`<option value="${t.id}" ${V.ft===t.id?'selected':''}>${esc(t.full_name)}</option>`).join('')}</select></label>
+      <label>الحلقة: <select onchange="pickHal(this.value)"><option value="all">الكل</option>${hs.map(x=>`<option value="${x.id}" ${V.fh===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+      <label>المعلم: <select onchange="pickTea(this.value)"><option value="all">الكل</option>${ts.map(t=>`<option value="${t.id}" ${V.ft===t.id?'selected':''}>${esc(t.full_name)}</option>`).join('')}</select></label>
       <label>الجنس: <select onchange="setV('fg',this.value)"><option value="all">الكل</option><option value="boy" ${V.fg==='boy'?'selected':''}>طالب</option><option value="girl" ${V.fg==='girl'?'selected':''}>طالبة</option></select></label>
       ${V.tab==='halaqat'?`<label>التجميع: <select onchange="setV('group',this.value)">${[['halaqa','حسب الحلقة'],['teacher','حسب المعلم'],['gender','حسب الجنس']].map(([k,n])=>`<option value="${k}" ${V.group===k?'selected':''}>${n}</option>`).join('')}</select></label>`:''}
       ${V.tab==='finance'?`<label>الشهر: <input type="month" value="${V.month}" onchange="setV('month',this.value)"></label>`:''}
@@ -423,13 +425,27 @@ function pickerHtml(){
   return h;
 }
 
+/* اختيار الحلقة يملأ معلمها، واختيار المعلم يملأ حلقته (إن كانت له حلقة واحدة) */
+function pickHal(v){
+  V.fh=v;
+  if(v!=='all'){ V.ft=haOf(v)?.teacher_id||'all'; }
+  paint();
+}
+function pickTea(v){
+  V.ft=v;
+  if(v!=='all'){ const hs=HA.filter(h=>h.branch_id===scope()&&h.teacher_id===v); V.fh=hs.length===1?hs[0].id:'all'; }
+  paint();
+}
+const showHalCol=()=>V.fh==='all';
+const showTeaCol=()=>V.ft==='all';
+
 function rowsOf(list){
   if(!list.length) return '<p class="note">لا يوجد طلاب</p>';
-  return `<div class="tw"><table><tr><th>الطالب</th><th>الجنس</th><th>ولي الأمر</th><th>الهاتف</th><th>الحلقة (تغيير)</th><th>المعلم</th></tr>${list.map(s=>{
+  return `<div class="tw"><table><tr><th>الطالب</th><th>الجنس</th><th>ولي الأمر</th><th>الهاتف</th>${showHalCol()?'<th>الحلقة (تغيير)</th>':''}${showTeaCol()?'<th>المعلم</th>':''}</tr>${list.map(s=>{
     const hh=haOf(s.halaqa_id);
     return `<tr><td>${sName(s)}</td><td>${GN[s.gender]}</td><td>${esc(s.guardian_name||'')}</td><td>${esc(s.phone||'')}</td>
-    <td><select onchange="moveStudent('${s.id}',this.value)"><option value="">—</option>${HA.filter(x=>x.branch_id===s.branch_id).map(x=>`<option value="${x.id}" ${x.id===s.halaqa_id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></td>
-    <td>${esc(teName(hh?.teacher_id))}</td></tr>`;}).join('')}</table></div>`;
+    ${showHalCol()?`<td><select onchange="moveStudent('${s.id}',this.value)"><option value="">—</option>${HA.filter(x=>x.branch_id===s.branch_id).map(x=>`<option value="${x.id}" ${x.id===s.halaqa_id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></td>`:''}
+    ${showTeaCol()?`<td>${esc(teName(hh?.teacher_id))}</td>`:''}</tr>`;}).join('')}</table></div>`;
 }
 const grp=(title,list,extra='')=>`<div class="grp"><span>${title}</span>${extra}<span class="note">(${list.length} طالب)</span></div>${rowsOf(list)}`;
 
@@ -468,7 +484,7 @@ function halaqaView(bid,hid){
   const list=ST.filter(s=>s.halaqa_id===hid);
   return `${logoHeader(brOf(bid))}
   <div class="showTop"><button class="b m" onclick="V.hl='';paint()">← كل الحلقات</button></div>
-  <div class="hHead"><h2>${esc(h?.name||'')}</h2><span>المشرف: ${esc(t?.full_name||'لم يُعيَّن')}</span><span>عدد الطلاب: ${list.length}</span></div>
+  <div class="hHead"><h2>${esc(h?.name||'')}</h2><span>المشرف: ${esc(t?.full_name||'لم يُعيَّن')}</span><span>عدد الطلاب: ${list.length}</span><button class="b m sm" onclick="printHalaqa('${hid}')">طباعة</button></div>
   <div class="sGrid">${list.map(s=>`<div class="sCard">${sName(s)}<span class="note">${GN[s.gender]}</span></div>`).join('')||'<p class="note">لا يوجد طلاب في هذه الحلقة</p>'}</div>`;
 }
 
@@ -729,6 +745,8 @@ function addBranch(){
 RV.halaqat=()=>{
   const b=scope(); if(!b) return noB();
   const hs=HA.filter(h=>h.branch_id===b), ts=TE.filter(t=>t.branch_id===b), ss=filtered(b);
+  const hsShow=hs.filter(h=>(V.fh==='all'||h.id===V.fh)&&(V.ft==='all'||h.teacher_id===V.ft));
+  const tsShow=ts.filter(t=>V.ft==='all'||t.id===V.ft);
   let h=`<div class="card"><h3>إضافة حلقة</h3><div class="row">
     <input id="hName" placeholder="اسم الحلقة، مثال: القراءة والكتابة (1)">
     <select id="hKind"><option value="rw">حلقة القراءة والكتابة</option><option value="quran">حلقة قرآن</option></select>
@@ -736,19 +754,48 @@ RV.halaqat=()=>{
     <input id="hCap" type="number" placeholder="السعة" value="20">
     <button class="b g" onclick="addHalaqa()">إضافة الحلقة</button></div></div>`;
   if(V.group==='halaqa'){
-    h+=hs.map(x=>grp(`${esc(x.name)} — ${KIND[x.kind]||''} — ${ss.filter(s=>s.halaqa_id===x.id).length} طالب من ${x.capacity||'—'}`,
+    h+=hsShow.map(x=>grp(`${esc(x.name)} — ${KIND[x.kind]||''} — ${ss.filter(s=>s.halaqa_id===x.id).length} طالب من ${x.capacity||'—'}`,
       ss.filter(s=>s.halaqa_id===x.id),
-      `<select onchange="setTeacher('${x.id}',this.value)"><option value="">بدون معلم</option>${ts.map(t=>`<option value="${t.id}" ${t.id===x.teacher_id?'selected':''}>${esc(t.full_name)}</option>`).join('')}</select>`)).join('')
+      `<select onchange="setTeacher('${x.id}',this.value)"><option value="">بدون معلم</option>${ts.map(t=>`<option value="${t.id}" ${t.id===x.teacher_id?'selected':''}>${esc(t.full_name)}</option>`).join('')}</select><button class="b m sm" onclick="printHalaqa('${x.id}')">طباعة</button>`)).join('')
       ||'<div class="card note">لا توجد حلقات بعد.</div>';
   } else if(V.group==='teacher'){
-    h+=ts.map(t=>{const ids=hs.filter(x=>x.teacher_id===t.id).map(x=>x.id);return grp('المعلم: '+esc(t.full_name),ss.filter(s=>ids.includes(s.halaqa_id)));}).join('');
-    const ids0=hs.filter(x=>!x.teacher_id).map(x=>x.id);
-    h+=grp('بدون معلم',ss.filter(s=>ids0.includes(s.halaqa_id)));
+    h+=tsShow.map(t=>{const ids=hs.filter(x=>x.teacher_id===t.id).map(x=>x.id);return grp('المعلم: '+esc(t.full_name),ss.filter(s=>ids.includes(s.halaqa_id)));}).join('');
+    if(V.ft==='all'){const ids0=hs.filter(x=>!x.teacher_id).map(x=>x.id);h+=grp('بدون معلم',ss.filter(s=>ids0.includes(s.halaqa_id)));}
   } else {
     h+=grp('طلاب',ss.filter(s=>s.gender==='boy'))+grp('طالبات',ss.filter(s=>s.gender==='girl'));
   }
   return h;
 };
+
+function printHalaqa(hid){
+  const h=haOf(hid); if(!h) return;
+  const tch=TE.find(x=>x.id===h.teacher_id);
+  const list=ST.filter(s=>s.halaqa_id===hid).sort((a,b)=>a.full_name.localeCompare(b.full_name,'ar'));
+  const img=BANNERS[brIdx(h.branch_id)]||BANNERS[0];
+  const html=`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(h.name)}</title>
+<style>
+@page{size:A4;margin:14mm}
+body{font-family:Tajawal,Arial,sans-serif;color:#111;margin:0}
+.hd{text-align:center;border-bottom:3px solid #14532d;padding-bottom:10px;margin-bottom:14px}
+.hd img{max-height:120px;max-width:100%}
+h1{font-size:24px;color:#14532d;margin:10px 0 4px}
+.meta{font-size:14px;color:#333}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid #777;padding:7px 9px;text-align:right}
+th{background:#e7f2ea}
+.n{width:40px;text-align:center}
+</style></head><body>
+<div class="hd"><img src="${img}" alt=""><h1>${esc(h.name)}</h1>
+<div class="meta">المعلم: ${esc(tch?.full_name||'لم يُعيَّن')} — ${KIND[h.kind]||''} — عدد الطلاب: ${list.length}</div></div>
+<table><tr><th class="n">#</th><th>الطالب</th><th>الجنس</th><th>ولي الأمر</th><th>الهاتف</th></tr>
+${list.map((s,i)=>`<tr><td class="n">${i+1}</td><td>${esc(s.full_name)}</td><td>${GN[s.gender]||''}</td><td>${esc(s.guardian_name||'')}</td><td>${esc(s.phone||'')}</td></tr>`).join('')||'<tr><td colspan="5">لا يوجد طلاب</td></tr>'}
+</table>
+<script>window.onload=function(){window.print()};<\/script>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w) return msg('المتصفح منع النافذة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.');
+  w.document.open(); w.document.write(html); w.document.close();
+}
 
 function addHalaqa(){
   const name=$('hName').value.trim();
@@ -893,10 +940,11 @@ async function loadDaily(){
   ]);
   if(!body.isConnected) return;
   if(rs.error||ss.error){body.innerHTML='<div class="note">تعذّر التحميل: '+esc((rs.error||ss.error).message)+'</div>';return}
-  const R=rs.data||[], S=ss.data||[], today=dOff(0);
+  const R=rs.data||[], today=dOff(0);
+  const S=(ss.data||[]).filter(s=>(V.fh==='all'||s.halaqa_id===V.fh)&&(V.ft==='all'||HA.find(h=>h.id===s.halaqa_id)?.teacher_id===V.ft));
   const subbed=new Set((sb.data||[]).map(x=>x.halaqa_id+'|'+x.period));   // تسليمات اليوم حسب الحلقة والفترة
   const subbedAny=new Set((sb.data||[]).map(x=>x.halaqa_id));              // حلقات سلّمت شيئاً اليوم
-  const HAs=HA.filter(h=>h.branch_id===b), TEs=TE.filter(t=>t.branch_id===b);
+  const HAs=HA.filter(h=>h.branch_id===b&&(V.fh==='all'||h.id===V.fh)&&(V.ft==='all'||h.teacher_id===V.ft)), TEs=TE.filter(t=>t.branch_id===b&&(V.ft==='all'||t.id===V.ft));
   // بيانات كل طالب
   const info=new Map(S.map(s=>{
     const mine=R.filter(r=>r.student_id===s.id);
@@ -933,7 +981,7 @@ async function loadDaily(){
     const dash=rw?'—':null;
     return `<tr>
       <td>${sName(s)}</td>
-      ${showHalaqa?`<td>${esc(hh?.name||'—')}</td>`:''}
+      ${showHalaqa&&V.fh==='all'?`<td>${esc(hh?.name||'—')}</td>`:''}
       <td>${attTxt}</td>
       <td>${recTxt}</td>
       <td>${pages&&!rw?'صفحة '+pages:'—'}</td>
@@ -942,7 +990,7 @@ async function loadDaily(){
       <td>${dash||(days?`حوالي ${days} يوم`:'—')}</td>
       <td>${dash||(finish||'—')}</td></tr>`;
   };
-  const head=(showHalaqa)=>`<div class="tw"><table><tr><th>الطالب</th>${showHalaqa?'<th>الحلقة</th>':''}<th>التحضير اليوم</th><th>التسميع والمراجعة والسبع</th><th>وصل إلى</th><th>المتبقي</th><th>المعدل</th><th>المدة المتوقعة للباقي</th><th>الانتهاء التقريبي</th></tr>`;
+  const head=(showHalaqa)=>`<div class="tw"><table><tr><th>الطالب</th>${showHalaqa&&V.fh==='all'?'<th>الحلقة</th>':''}<th>التحضير اليوم</th><th>التسميع والمراجعة والسبع</th><th>وصل إلى</th><th>المتبقي</th><th>المعدل</th><th>المدة المتوقعة للباقي</th><th>الانتهاء التقريبي</th></tr>`;
   const counts=arr=>{
     const parts=PERIODS_M.map(([p,n])=>{
       const xs=arr.filter(x=>subbed.has(x.s.halaqa_id+'|'+p));
@@ -984,11 +1032,11 @@ RV.progress=()=>{
   const b=scope(); if(!b) return noB();
   const list=filtered(b);
   if(!list.length) return '<div class="card note">لا يوجد طلاب بهذا الفرز.</div>';
-  return dailyCard()+`<div class="tw"><table><tr><th>الطالب</th><th>الحلقة</th><th>المعلم</th><th>الحفظ (القرآن)</th><th>القراءة والكتابة</th><th></th></tr>
+  return dailyCard()+`<div class="tw"><table><tr><th>الطالب</th>${showHalCol()?'<th>الحلقة</th>':''}${showTeaCol()?'<th>المعلم</th>':''}<th>الحفظ (القرآن)</th><th>القراءة والكتابة</th><th></th></tr>
   ${list.map(s=>{const hh=haOf(s.halaqa_id);return `<tr>
     <td>${sName(s)}<div class="note">${GN[s.gender]}</div></td>
-    <td>${esc(hh?.name||'—')}</td>
-    <td>${esc(teName(hh?.teacher_id))}</td>
+    ${showHalCol()?`<td>${esc(hh?.name||'—')}</td>`:''}
+    ${showTeaCol()?`<td>${esc(teName(hh?.teacher_id))}</td>`:''}
     <td><input id="q_${s.id}" value="${esc(s.quran_progress||'')}"></td>
     <td><input id="r_${s.id}" value="${esc(s.rw_progress||'')}"></td>
     <td><button class="b g" onclick="saveProgress('${s.id}')">حفظ</button></td></tr>`;}).join('')}</table></div>`;
@@ -1075,14 +1123,31 @@ const incomeOf=(bid,mk)=>{const ids=new Set(ST.filter(s=>s.branch_id===bid).map(
 
 /* ===== التقرير المالي السنوي ===== */
 function finReport(b,canEdit){
+  const view=V.finView||'month';
+  const tabs=`<div class="finTabs" style="display:flex;gap:8px;flex-wrap:wrap"><button class="b ${view==='month'?'g':'m'}" onclick="setV('finView','month')">التقرير الشهري</button><button class="b ${view==='year'?'g':'m'}" onclick="setV('finView','year')">التقرير السنوي</button></div>`;
+  if(view==='month'){
+    const mk=V.month||monthNow();
+    const mLabel=`${MONTHS_AR[Number(mk.slice(5))-1]} ${mk.slice(0,4)}`;
+    const inc=incomeOf(b.id,mk), exp=expTotal(b.id,mk), rem=inc-exp;
+    return `<div class="fin">
+      <div class="finHead"><div><h3>التقرير المالي — ${mLabel}</h3><div class="note">${esc(b.name)}</div></div>${tabs}</div>
+      <div class="finCards">
+        <div class="fc ok"><span>إجمالي الواردات</span><b>${fmtN(inc)}</b></div>
+        <div class="fc bad"><span>إجمالي المصروفات</span><b>${fmtN(exp)}</b></div>
+        <div class="fc info"><span>الربح</span><b>${fmtN(rem)}</b></div>
+      </div>
+      <p class="note">يعرض الشهر المحدد في خانة «الشهر» أعلاه، وهو الشهر الجاري افتراضاً. الوارد = الرسوم المسدّدة في الشهر.</p>
+    </div>`;
+  }
   const y=V.year||new Date().getFullYear();
   const rows=MONTHS_AR.map((m,i)=>{const mk=mKey(y,i);const inc=incomeOf(b.id,mk);const exp=expTotal(b.id,mk);return {m,mk,inc,exp,rem:inc-exp};});
   const T=rows.reduce((a,r)=>({inc:a.inc+r.inc,exp:a.exp+r.exp,rem:a.rem+r.rem}),{inc:0,exp:0,rem:0});
   const maxV=Math.max(1,...rows.map(r=>Math.max(r.inc,r.exp)));
   const pct=v=>Math.round(v/maxV*100);
   return `<div class="fin">
-    <div class="finHead"><div><h3>التقرير المالي ${y}</h3><div class="note">${esc(b.name)}</div></div>
-      <label>السنة: <select onchange="setV('year',Number(this.value))">${[y-1,y,y+1].map(v=>`<option value="${v}" ${v===y?'selected':''}>${v}</option>`).join('')}</select></label></div>
+    <div class="finHead"><div><h3>التقرير السنوي ${y}</h3><div class="note">${esc(b.name)}</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${tabs}
+      <label>السنة: <select onchange="setV('year',Number(this.value))">${[y-1,y,y+1].map(v=>`<option value="${v}" ${v===y?'selected':''}>${v}</option>`).join('')}</select></label></div></div>
     <div class="finCards">
       <div class="fc ok"><span>إجمالي الواردات</span><b>${fmtN(T.inc)}</b></div>
       <div class="fc bad"><span>إجمالي المصروفات</span><b>${fmtN(T.exp)}</b></div>
@@ -1152,9 +1217,9 @@ RV.finance=()=>{
     <button class="b g keepRO" onclick="setV('fx',!V.fx)">${V.fx?'إخفاء القائمة':'قائمة المعفيين والمخفّضين'} (${exL.length})</button></div></div>
   ${V.fx?`<div class="card"><h3>المعفيون والمخفّضون</h3><div class="tw"><table><tr><th>الطالب</th><th>الحلقة</th><th>المطلوب شهرياً</th><th>الحالة</th><th>ملاحظة</th></tr>
     ${exL.map(s=>`<tr><td>${sName(s)}</td><td>${esc(haOf(s.halaqa_id)?.name||'—')}</td><td>${feeOf(s)}</td><td>${feeStatus(s)}</td><td>${esc(s.fee_note||'')}</td></tr>`).join('')||'<tr><td colspan="5" class="note">لا يوجد معفيون ولا مخفّضون</td></tr>'}</table></div></div>`:''}
-  <div class="tw"><table><tr><th>الطالب</th><th>الجنس</th><th>الحلقة</th><th>المطلوب</th><th>رسوم القبول</th><th>سداد الشهر ${V.month}</th></tr>
+  <div class="tw"><table><tr><th>الطالب</th><th>الجنس</th>${showHalCol()?'<th>الحلقة</th>':''}<th>المطلوب</th><th>رسوم القبول</th><th>سداد الشهر ${V.month}</th></tr>
   ${list.map(s=>{const pd=isPaid(s.id);return `<tr>
-    <td>${sName(s)}</td><td>${GN[s.gender]}</td><td>${esc(haOf(s.halaqa_id)?.name||'—')}</td>
+    <td>${sName(s)}</td><td>${GN[s.gender]}</td>${showHalCol()?`<td>${esc(haOf(s.halaqa_id)?.name||'—')}</td>`:''}
     <td>${s.exempt?'<span class="ok">معفى</span>':`${feeOf(s)}${s.monthly_fee!=null?` <span class="note">(${feeStatus(s)})</span>`:''}`}</td>
     <td>${canEdit?`<button class="b ${s.admission_paid?'g':'m'}" onclick="toggleAdm('${s.id}',${!s.admission_paid})">${s.admission_paid?'مسدّد ✓':'لم يسدّد'}</button>`:(s.admission_paid?'<span class="ok">مسدّد</span>':'<span class="bad">لم يسدّد</span>')}</td>
     <td>${s.exempt?'<span class="note">لا يلزم</span>':`<span class="${pd?'ok':'bad'}">${pd?'سدّد':'لم يسدّد'}</span> <button class="b ${pd?'m':'g'}" onclick="togglePay('${s.id}')">${pd?'إلغاء السداد':'تسجيل السداد'}</button>`}</td></tr>`;}).join('')
