@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حلقتي — مدرسة الإتقان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c9a04a;--green:#1b6b3a;--dark:#123d24;--cream:#fbf7ee;--ink:#2a1d0a}
+*{box-sizing:border-box}
+body{margin:0;font-family:Tajawal,Tahoma,sans-serif;color:var(--ink);background:radial-gradient(circle at 20% 0,#fff8e6,#f3ead2 60%,#ebe0c4);min-height:100vh;font-size:17px}
+.hide{display:none!important}
+
+.top{background:linear-gradient(120deg,var(--dark),var(--green));color:#fff;padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.top .t{font-weight:900;font-size:19px}
+.top .s{font-size:14px;opacity:.9}
+.banner{display:flex;justify-content:center;align-items:center;padding:14px;margin:12px auto 8px;max-width:1100px;border-radius:22px;background:linear-gradient(135deg,#0b2f22,#14532d 55%,#0b2f22);box-shadow:0 14px 34px rgba(20,83,45,.3)}
+.banner img{width:min(640px,100%);height:auto;background:#fff;border-radius:16px;padding:8px}
+
+.nav{display:flex;gap:12px;flex-wrap:wrap;max-width:1100px;margin:10px auto 6px;padding:0 14px}
+.nav button{flex:1;min-width:180px;font:inherit;font-weight:900;font-size:17px;color:#fff;border:0;border-radius:18px;padding:16px 18px;cursor:pointer;text-align:right;box-shadow:0 8px 18px rgba(0,0,0,.14);transition:transform .15s}
+.nav button:hover{transform:translateY(-2px)}
+.nav button small{display:block;font-weight:600;font-size:13px;opacity:.9;margin-top:4px}
+.nav .bp{background:linear-gradient(135deg,#7a5c3a,#a88a5c)}
+.nav .ba{background:linear-gradient(135deg,#1b6b3a,#2f9e5a)}
+.nav .br{background:linear-gradient(135deg,#e5572a,#f7941d)}
+.nav button.off{opacity:.5}
+
+.hal-banner{max-width:1100px;margin:12px auto 0;padding:14px 18px;border-radius:14px;background:linear-gradient(135deg,#123d24,#2e7d4f);color:#fff;text-align:center;font-size:30px;font-weight:900;box-shadow:0 4px 14px rgba(18,61,36,.18)}
+.hal-banner .s2{font-size:13px;font-weight:600;opacity:.9;margin-top:4px}
+.ctl{max-width:1100px;margin:6px auto 0;padding:0 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ctl select{flex:1;min-width:220px}
+
+.wrap{display:grid;grid-template-columns:360px 1fr;gap:14px;padding:12px 14px 24px;max-width:1100px;margin:auto}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.card{background:rgba(255,255,255,.96);border:1px solid #e8d3a2;border-radius:18px;padding:16px;margin:0 0 12px;box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.card h3{margin:0 0 10px;color:var(--green);font-weight:900;font-size:18px}
+.note{font-size:13px;color:#6b6b5a;line-height:1.7}
+
+button.b{font:inherit;font-weight:800;background:linear-gradient(135deg,#e5572a,#f7941d);color:#fff;border:0;border-radius:12px;padding:10px 16px;cursor:pointer;box-shadow:0 4px 10px rgba(229,87,42,.25)}
+button.b.g{background:linear-gradient(135deg,#1b6b3a,#2f9e5a);box-shadow:0 4px 10px rgba(27,107,58,.25)}
+button.b.m{background:linear-gradient(135deg,#7a5c3a,#a88a5c);box-shadow:0 4px 10px rgba(122,92,58,.25)}
+button.b.r{background:linear-gradient(135deg,#8c2030,#c8404f);box-shadow:0 4px 10px rgba(140,32,48,.25)}
+button.b.gold{background:linear-gradient(135deg,#c9a04a,#e2be6c);color:#2a1d0a;box-shadow:0 4px 10px rgba(201,160,74,.3)}
+button.b.gray{background:#efe9d8;color:var(--ink);box-shadow:none}
+button.b.sm{padding:7px 11px;font-size:14px}
+button.b.full{width:100%}
+input,select{font:inherit;padding:9px 11px;border:2px solid #e8d3a2;border-radius:11px;background:#fff;color:var(--ink)}
+input.full{width:100%;margin:5px 0}
+.rangeBox{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0;background:#f7f0dd;border-radius:12px;padding:10px}
+.rangeBox .lb{font-weight:900;color:var(--dark)}
+.rangeBox select{min-width:150px}
+.rangeBox input{width:90px}
+.pgBar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0}
+.pgBar strong{color:var(--dark);font-size:17px}
+.surahHead{display:block;text-align:center;font-family:Tajawal,sans-serif;font-weight:900;color:var(--dark);background:#f7f0dd;border-radius:10px;padding:4px;margin:8px 0;font-size:16px}
+.gate{max-width:400px;margin:60px auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e8d3a2;box-shadow:0 10px 26px rgba(0,0,0,.08)}
+.gate h2{text-align:center;color:var(--green);margin:4px 0 14px;font-weight:900}
+
+/* قائمة الطلاب */
+.rw{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;border:2px solid #efe6cc;border-radius:14px;padding:10px 12px;margin-bottom:9px;background:#fff}
+.rw .nm{font-weight:900;font-size:17px;color:var(--dark)}
+.rw .st{font-size:13px;color:#6b6b5a;width:100%}
+.rw.done{background:#e4f4ea;border-color:#1b6b3a}
+.rw.done .nm::after{content:" ✓";color:#1b6b3a}
+.lnk{color:var(--green);font-weight:900;cursor:pointer;text-decoration:underline}
+.att{display:flex;gap:6px;flex-wrap:wrap}
+.att button{font:inherit;font-size:14px;font-weight:700;padding:7px 11px;border-radius:9px;border:0;background:#f1ecdc;color:var(--ink);cursor:pointer}
+.att button.p{background:#1b6b3a;color:#fff}
+.att button.a{background:#c8404f;color:#fff}
+.att button.l{background:#e2be6c;color:#2a1d0a}
+.att button.e{background:#4a6fa5;color:#fff}
+.att button.cur{outline:3px solid #123d24}
+.sum{background:#f7f0dd;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-weight:700;color:var(--dark)}
+
+/* مصحف */
+.ayahs{font-family:Amiri,serif;font-size:27px;line-height:2.2;text-align:justify;direction:rtl;background:#fffdf7;border:1px solid #efe6cc;border-radius:14px;padding:12px}
+.ay{cursor:pointer;display:inline-block;padding:2px 4px;border-radius:6px;user-select:none}
+.ay:hover{background:#f1ecdc}
+.ay.in{background:#d8efe2}
+.ay.start{box-shadow:inset 0 -3px 0 #1b6b3a}
+.ay.end{background:#c9a04a;color:#fff}
+.ay.cur{outline:2px dashed #1b6b3a}
+.num{font-family:Tajawal,sans-serif;font-size:14px;color:#8a7a52;margin:0 2px}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{background:#f7f0dd;color:var(--dark);font-weight:800}
+td,th{border-bottom:1px solid #efe6cc;padding:8px 6px;text-align:right}
+.tw{overflow-x:auto}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:12px;z-index:9}
+.modal.on{display:flex}
+.box{background:#fff;border-radius:18px;padding:14px;max-width:900px;width:100%;max-height:96vh;overflow:auto;text-align:center}
+.box img{max-width:100%;height:auto;border-radius:10px;display:block;margin:8px auto}
+#msg{font-size:15px;margin:8px 16px;color:#8c2030;font-weight:700;max-width:1100px}
+#msg.ok{color:#1b6b3a}
+.pill{display:inline-block;background:#f7f0dd;border-radius:999px;padding:3px 10px;font-size:13px;margin:2px;color:var(--dark)}
+</style>
+</head>
+<body>
+
+<!-- ============ دخول ============ -->
+<div id="gate" class="gate">
+  <h2>دخول المعلم</h2>
+  <input class="full" id="gEmail" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+  <input class="full" id="gPass" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+  <button class="b g full" id="gBtn">دخول</button>
+  <a href="index.html" style="display:block;margin-top:14px;text-align:center;color:#123d24;font-weight:700">← العودة إلى الجمعية</a>
+  <div id="gMsg" class="note" style="color:#8c2030;margin-top:8px"></div>
+</div>
+
+<div id="app" class="hide">
+  <div class="top">
+    <div><div class="t">مدرسة الإتقان لتحفيظ القرآن الكريم — الفرع الأول</div><div class="s" id="who"></div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a href="index.html" style="display:inline-block;background:#1b6b3a;color:#fff;border-radius:10px;padding:9px 16px;font-weight:700;text-decoration:none;font-size:15px">← العودة إلى الجمعية</a><button class="b gray sm" id="outBtn">خروج</button></div>
+  </div>
+  <div class="banner"><img id="branchImg" src="itqan-branch1-logo.png" alt="الفرع"></div>
+  <div class="hal-banner" id="halBanner"></div>
+
+  <!-- الأزرار الرئيسية -->
+  <div class="nav">
+    <button class="bp" id="navProfile" onclick="showView('profile')">ملفي<small>بياناتي والمهام المكلّف بها</small></button>
+    <button class="ba" id="navAtt" onclick="showView('att')">التحضير<small>حاضر · غائب · متأخر · بعذر</small></button>
+    <button class="br" id="navRec" onclick="showRec('tasmee')">التسميع<small>قائمة الحلقة وتسليم اليوم</small></button>
+    <button class="br" id="navMur" onclick="showRec('muraja')">المراجعة<small>قائمة الحلقة وتسليم اليوم</small></button>
+    <button class="br" id="navSab" onclick="showRec('sabaa')">السبع<small>قائمة الحلقة وتسليم اليوم</small></button>
+  </div>
+
+  <!-- اختيار الحلقة والتاريخ (للتحضير والتسميع) -->
+  <div class="ctl" id="ctl">
+    <select id="halSel"></select>
+    <input type="date" id="day">
+  </div>
+  <div id="msg"></div>
+
+  <!-- ============ ملفي ============ -->
+  <div id="viewProfile" class="wrap" style="grid-template-columns:1fr">
+    <div class="card">
+      <h3>بياناتي</h3>
+      <div id="profileBox" class="note">—</div>
+    </div>
+    <div class="card">
+      <h3>المهام المكلّف بها</h3>
+      <ol style="line-height:2;padding-right:20px;margin:0">
+        <li>تسجيل حضور كل طالب في حلقتك يومياً: حاضر، غائب، متأخر، أو بعذر.</li>
+        <li>تسميع كل طالب: تحديد آخر آية سمّعها في الدرس، فيُحسب الباقي تلقائياً.</li>
+        <li>بعد الانتهاء من التسميع، تسليم نتائج اليوم إلى الإدارة.</li>
+        <li>متابعة الطالب المتأخر أو الذي لم يُسمّع، والتنسيق مع إدارة الفرع عند الحاجة.</li>
+        <li>الحفاظ على سرية بيانات الطلاب وعدم مشاركتها خارج الإدارة.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ التحضير ============ -->
+  <div id="viewAtt" class="wrap hide" style="grid-template-columns:1fr">
+    <div class="card">
+      <h3>التحضير</h3>
+      <div id="periodBar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <div id="attSum" class="sum"></div>
+      <div id="attList"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+        <button class="b g" id="attSubmitBtn">تسليم إلى الإدارة</button>
+        <span id="attSubmitInfo" class="note"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ التسميع ============ -->
+  <div id="viewRec" class="wrap hide">
+    <!-- قائمة التسميع -->
+    <div class="card" id="recListCard" style="grid-column:1/-1">
+      <h3 id="recTitle">قائمة التسميع</h3>
+      <div id="recSum" class="sum"></div>
+      <div id="recList"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+        <button class="b g" id="submitBtn">تسليم إلى الإدارة</button>
+        <span id="submitInfo" class="note"></span>
+      </div>
+    </div>
+
+    <!-- صفحة تسميع طالب -->
+    <div id="recPageCard" class="hide" style="grid-column:1/-1">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="b gray sm" id="backBtn">← العودة إلى قائمة التسميع</button>
+          <div id="activeHead" class="note"></div>
+        </div>
+        <div class="rangeBox">
+          <span class="lb">من:</span>
+          <select id="fSur"></select>
+          <input id="fAy" type="number" min="1" placeholder="رقم الآية">
+          <span class="lb">إلى:</span>
+          <select id="tSur"></select>
+          <input id="tAy" type="number" min="1" placeholder="رقم الآية">
+          <button class="b g sm" id="applyRange">تطبيق المدى</button>
+        </div>
+        <div id="sel" class="note"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">
+          <select id="surah" style="flex:1;min-width:180px"></select>
+          <input id="pg" type="number" min="1" max="604" placeholder="رقم الصفحة" style="width:120px">
+          <button class="b g sm" id="goPage">اذهب</button>
+        </div>
+        <p class="note">اضغط على آخر آية سمّعها الطالب في هذا الدرس. يبدأ الدرس تلقائياً من الآية التالية لآخر ما حفظه.</p>
+        <div class="pgBar">
+          <button class="b gray sm" id="prevPg">‹ الصفحة السابقة</button>
+          <strong id="pgLabel"></strong>
+          <button class="b gray sm" id="nextPg">الصفحة التالية ›</button>
+        </div>
+        <div id="text" class="ayahs"></div>
+        <div class="pgBar">
+          <button class="b gray sm" id="prevPg2">‹ الصفحة السابقة</button>
+          <span class="note">صفحة واحدة في كل شاشة، والتحديد يبقى عند التنقل</span>
+          <button class="b gray sm" id="nextPg2">الصفحة التالية ›</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="b g" id="save">حفظ التسميع</button>
+          <button class="b gold" id="preview">معاينة الصفحة</button>
+          <button class="b gray" id="clear">إلغاء التحديد</button>
+          <button class="b r" id="undo">مسح تسميع اليوم</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>سجل الطالب المحدد</h3>
+        <div id="hist" class="note">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <button class="b gray sm" id="pPrev">‹ السابقة</button>
+      <strong id="pTitle"></strong>
+      <button class="b gray sm" id="pNext">التالية ›</button>
+    </div>
+    <img id="pImg" alt="صفحة من المصحف">
+    <div id="pMsg" class="note"></div>
+    <button class="b g" id="pClose" style="margin-top:8px">إغلاق</button>
+  </div>
+</div>
+
+<script src="quran-data.js"></script>
+<script>
+/* مكتبة الاتصال: تُحمَّل من مصدرين بديلين حتى لا تتوقف الصفحة إن تعذّر أحدهما */
+const LIBS = ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
+              'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'];
+function loadLib(urls, cb) {
+  if (window.supabase) return cb(true);
+  const u = urls.shift();
+  if (!u) return cb(false);
+  const sc = document.createElement('script');
+  sc.src = u; sc.onload = () => cb(!!window.supabase); sc.onerror = () => loadLib(urls, cb);
+  document.head.appendChild(sc);
+}
+let db = null;
+
+const A = QDATA.ayahs, SU = QDATA.suras, Q = QDATA.quarters;
+const starts = []; { let acc = 0; SU.forEach(([n, c]) => { starts.push(acc); acc += c; }); }
+/* ترتيب القراءة: السور من الناس إلى البقرة، والآيات داخل كل سورة من الأول إلى الآخر */
+const SEQ = [];
+for (let sur = 114; sur >= 1; sur--) for (let a = 1; a <= SU[sur - 1][1]; a++) SEQ.push(starts[sur - 1] + a - 1);
+const POS = new Array(A.length);
+SEQ.forEach((g, p) => { POS[g] = p; });
+/* عدد الصفحات المتبقية من الموضع p حتى نهاية الترتيب (صفحات متميزة) */
+const PAGES_LEFT = new Array(SEQ.length + 1).fill(0);
+{ const seen = new Set(); for (let p = SEQ.length - 1; p >= 0; p--) { seen.add(A[SEQ[p]][2]); PAGES_LEFT[p] = seen.size; } }
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const AR = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const ATT = { present:'حاضر', absent:'غائب', late:'متأخر', excused:'بعذر' };
+/* فترات التحضير اليومي الثلاث، والتسميع يُحفظ بفترة 'tasmee' */
+const PERIODS = [['sabah','الصباح'],['fasl','بعد الفسح'],['ghada','بعد الغذاء']];
+let period = 'sabah';
+const PN = () => PERIODS.find(x => x[0] === period)[1];
+/* أنواع التسميع الثلاثة بنفس الشكل: التسميع ثم المراجعة ثم السبع */
+const RECN = { tasmee:'التسميع', muraja:'المراجعة', sabaa:'السبع' };
+let recType = 'tasmee';
+function isRw() { const h = HALAQAT.find(x => x.id === halId); return !!h && h.kind === 'rw'; }
+const ATT_CLS = { present:'p', absent:'a', late:'l', excused:'e' };
+const BRANCH_BANNER = { 'itqan-1':'itqan-branch1-logo.png', 'itqan-2':'branch2-banner.png', 'itqan-3':'branch3-banner.png' };
+const KIND = { rw:'حلقة القراءة والكتابة', quran:'حلقة قرآن' };
+const label = g => `${SU[A[g][0]-1][0]} ${AR(A[g][1])}`;
+const dayStr = off => { const d = new Date(); d.setDate(d.getDate() + off); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+const qAt = g => Q.filter(x => x <= g).length;
+const AYAH_PER_PAGE = A.length / 604, AYAH_PER_QUARTER = A.length / 240;
+const amount = n => `${n} آية ≈ ${(n / AYAH_PER_PAGE).toFixed(1)} صفحة ≈ ${(n / AYAH_PER_QUARTER).toFixed(2)} ربع`;
+
+let ME = null, TEACHER = null, BRANCH = null, HALAQAT = [], STUDENTS = [], DAILY = [], SUBS = [];
+let curPage = 1, pageOwner = null;
+let halId = null, view = 'att', recMode = 'list', activeSid = null, selStart = null, selEnd = null, previewPage = 1;
+let cur = { day: dayStr(0) };
+
+/* ---------- الدخول ---------- */
+$('gBtn').onclick = async () => {
+  if (!db) { $('gMsg').textContent = 'جارٍ الاتصال بالخادم… أعد المحاولة بعد لحظة.'; return; }
+  try {
+    const { error } = await db.auth.signInWithPassword({ email: $('gEmail').value.trim(), password: $('gPass').value });
+    if (error) { $('gMsg').textContent = 'البريد أو كلمة المرور غير صحيحة'; return; }
+    enter();
+  } catch (e) { $('gMsg').textContent = 'تعذّر تسجيل الدخول: ' + e.message; }
+};
+$('outBtn').onclick = async () => { await db.auth.signOut(); location.reload(); };
+
+async function enter() {
+  try {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    const { data: prof } = await db.from('profiles').select('full_name,role').eq('id', user.id).maybeSingle();
+    if (!prof || prof.role !== 'itqan_teacher') { $('gMsg').textContent = 'هذا الحساب ليس حساب معلم في مدارس الإتقان'; await db.auth.signOut(); return; }
+    const { data: t } = await db.from('itqan_teachers').select('*').eq('user_id', user.id).maybeSingle();
+    if (!t) { $('gMsg').textContent = 'لم يُربط حسابك بسجل المعلم بعد. راجع الإدارة.'; await db.auth.signOut(); return; }
+    ME = { id: user.id, name: prof.full_name }; TEACHER = t;
+    $('gate').classList.add('hide'); $('app').classList.remove('hide');
+    $('who').textContent = `مرحباً، ${TEACHER.full_name}`;
+    $('branchImg').src = BRANCH_BANNER[TEACHER.branch_id] || 'assoc-banner.png';
+    await loadAll();
+    showView('att');
+  } catch (e) { $('gMsg').textContent = 'تعذّر الدخول: ' + e.message; }
+}
+
+async function loadAll() {
+  const [h, br] = await Promise.all([
+    db.from('itqan_halaqat').select('*').eq('teacher_id', TEACHER.id).order('name'),
+    db.from('itqan_branches').select('*').eq('id', TEACHER.branch_id).maybeSingle()
+  ]);
+  HALAQAT = h.data || []; BRANCH = br.data || null;
+  const ids = HALAQAT.map(x => x.id);
+  const st = ids.length ? await db.from('itqan_students').select('*').in('halaqa_id', ids).order('full_name') : { data: [] };
+  STUDENTS = st.data || [];
+  await reloadDaily();
+  $('halSel').innerHTML = HALAQAT.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('') || '<option>لا توجد حلقات مرتبطة بك</option>';
+  halId = HALAQAT[0]?.id || null;
+  $('halSel').value = halId || '';
+  $('day').value = cur.day; $('day').min = dayStr(-2); $('day').max = dayStr(0);
+  renderProfile();
+  paint();
+}
+
+/* ---------- التنقل ---------- */
+function showView(v) {
+  if (v === 'rec' && isRw()) v = 'att';   // حلقات القراءة والكتابة لا تسميع فيها
+  view = v;
+  $('viewProfile').classList.toggle('hide', v !== 'profile');
+  $('viewAtt').classList.toggle('hide', v !== 'att');
+  $('viewRec').classList.toggle('hide', v !== 'rec');
+  $('ctl').classList.toggle('hide', v === 'profile');
+  $('navProfile').classList.toggle('off', v !== 'profile');
+  $('navAtt').classList.toggle('off', v !== 'att');
+  $('navRec').classList.toggle('off', v !== 'rec' || recType !== 'tasmee');
+  $('navMur').classList.toggle('off', v !== 'rec' || recType !== 'muraja');
+  $('navSab').classList.toggle('off', v !== 'rec' || recType !== 'sabaa');
+  if (v === 'att') period = (PERIODS.find(([k]) => !subOf(halId, cur.day, k)) || PERIODS[0])[0];
+  if (v === 'rec' && recMode === 'list') activeSid = null;
+  paint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function renderProfile() {
+  const hs = HALAQAT.map(h => {
+    const n = STUDENTS.filter(s => s.halaqa_id === h.id).length;
+    return `<span class="pill">${esc(h.name)} — ${KIND[h.kind] || ''} — ${n} طالباً</span>`;
+  }).join('') || '<span class="note">لا توجد حلقات مرتبطة بك بعد.</span>';
+  $('profileBox').innerHTML = `
+    <div style="font-size:18px;font-weight:900;color:#123d24;margin-bottom:6px">${esc(TEACHER.full_name)}</div>
+    <div>الفرع: <b>${esc(BRANCH?.name || '—')}</b></div>
+    <div>الهاتف: <b>${esc(TEACHER.phone || '—')}</b></div>
+    <div style="margin-top:8px">الحلقات المسندة إليك:<br>${hs}</div>`;
+}
+
+/* ---------- الحسابات ---------- */
+const stuList = () => STUDENTS.filter(s => s.halaqa_id === halId);
+const rowsOf = sid => DAILY.filter(r => r.student_id === sid);
+/* الموضع = آخر آية وصل إليها الطالب بترتيب القراءة (-1 = لم يبدأ) */
+function lastAyah(sid, excludeDay) {
+  const st = STUDENTS.find(x => x.id === sid);
+  let last = st?.quran_base_ayah ?? -1;
+  rowsOf(sid).forEach(r => { if (r.period === 'tasmee' && r.ayah_to != null && r.day !== excludeDay) last = Math.max(last, POS[r.ayah_to]); });
+  return last;
+}
+function posText(sid) {
+  const last = lastAyah(sid, cur.day);
+  if (last < 0) return 'لم يبدأ بعد';
+  if (last >= SEQ.length - 1) return 'أتمّ القرآن';
+  return `وصل إلى ${label(SEQ[last])} — بقي ${PAGES_LEFT[last + 1]} صفحة (${((last + 1) / A.length * 100).toFixed(1)}%)`;
+}
+/* نص الاختيار: من (الأسبق في القراءة) إلى (الأحدث) */
+function selLabel() {
+  if (selStart == null) return '';
+  if (selEnd == null) return `البداية: ${label(selStart)} — اضغط على آخر آية`;
+  const [a, b] = POS[selStart] <= POS[selEnd] ? [selStart, selEnd] : [selEnd, selStart];
+  return `من ${label(a)} — إلى ${label(b)} — ${amount(POS[b] - POS[a] + 1)}`;
+}
+function attOf(sid, day, p) { return DAILY.find(r => r.student_id === sid && r.day === day && r.period === p) || null; }
+function recOf(sid, day, t = recType) { return DAILY.find(r => r.student_id === sid && r.day === day && r.period === t) || null; }
+function subOf(hid, day, p = 'tasmee') { return SUBS.find(x => x.halaqa_id === hid && x.day === day && x.period === p) || null; }
+function attSummary(sid) {
+  const parts = PERIODS.map(([k, n]) => { const r = attOf(sid, cur.day, k); return r?.attendance ? `${n}: ${ATT[r.attendance]}` : null; }).filter(Boolean);
+  return parts.length ? ' — ' + parts.join(' · ') : '';
+}
+
+/* ---------- الرسم ---------- */
+function renderBanner() {
+  ['navRec','navMur','navSab'].forEach(id => $(id).classList.toggle('hide', isRw()));
+  const h = HALAQAT.find(x => x.id === halId);
+  $('halBanner').innerHTML = h
+    ? `<div>حلقتي: ${esc(h.name)}</div><div class="s2">المعلم: ${esc(TEACHER.full_name)} — ${KIND[h.kind] || ''}</div>`
+    : '<div>لا توجد حلقة مسندة إليك</div>';
+}
+function paint() {
+  halId = $('halSel').value || halId;
+  if (view === 'rec' && isRw()) { showView('att'); return; }
+  renderBanner();
+  if (view === 'att') renderAtt();
+  if (view === 'rec') renderRec();
+  if (view === 'rec' && recMode === 'page' && activeSid) renderActive();
+}
+
+function renderAtt() {
+  const list = stuList();
+  const c = k => list.filter(s => attOf(s.id, cur.day, period)?.attendance === k).length;
+  $('periodBar').innerHTML = PERIODS.map(([k, n]) =>
+    `<button class="b ${k === period ? 'g' : 'gray'} sm" onclick="setPeriod('${k}')">${n}${subOf(halId, cur.day, k) ? ' ✓' : ''}</button>`).join('');
+  $('attSum').textContent = `${PN()} — اليوم ${cur.day}: حاضر ${c('present')} · غائب ${c('absent')} · متأخر ${c('late')} · بعذر ${c('excused')} — من ${list.length} طالباً`;
+  $('attList').innerHTML = list.map(s => {
+    const r = attOf(s.id, cur.day, period);
+    const btns = ['present','absent','late','excused'].map(k =>
+      `<button class="${ATT_CLS[k]} ${r?.attendance === k ? 'cur' : ''}" onclick="setAtt('${s.id}','${k}')">${ATT[k]}</button>`).join('');
+    return `<div class="rw ${r?.attendance ? 'done' : ''}"><span class="nm">${esc(s.full_name)}</span><div class="att">${btns}</div></div>`;
+  }).join('') || '<p class="note">لا يوجد طلاب في هذه الحلقة.</p>';
+  const sub = subOf(halId, cur.day, period);
+  $('attSubmitBtn').textContent = sub ? `إعادة تسليم ${PN()} إلى الإدارة` : `تسليم ${PN()} إلى الإدارة`;
+  $('attSubmitInfo').textContent = sub
+    ? `تم التسليم ✓ الساعة ${new Date(sub.submitted_at).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`
+    : 'بعد التسليم تظهر نتائج هذه الفترة لدى الإدارة.';
+}
+
+function renderRec() {
+  const showPage = recMode === 'page' && activeSid;
+  $('recListCard').classList.toggle('hide', !!showPage);
+  $('recPageCard').classList.toggle('hide', !showPage);
+  if (showPage) return;
+  $('recTitle').textContent = 'قائمة ' + RECN[recType];
+  const list = stuList();
+  const done = list.filter(s => recOf(s.id, cur.day)?.ayah_to != null).length;
+  $('recSum').textContent = `${RECN[recType]} اليوم ${done} من ${list.length} طالباً`;
+  $('recList').innerHTML = list.map(s => {
+    const r = recOf(s.id, cur.day);
+    const isDone = r?.ayah_to != null;
+    const st = isDone
+      ? `تم ${RECN[recType]}: من ${label(r.ayah_from)} إلى ${label(r.ayah_to)} — ${amount(POS[r.ayah_to] - POS[r.ayah_from] + 1)}`
+      : `لم يُسمّع اليوم — الموضع: ${posText(s.id)}`;
+    return `<div class="rw ${isDone ? 'done' : ''}">
+      <span class="nm"><span class="lnk" onclick="pick('${s.id}')">${esc(s.full_name)}</span></span>
+      <span class="st">${st}</span></div>`;
+  }).join('') || '<p class="note">لا يوجد طلاب في هذه الحلقة.</p>';
+  const sub = subOf(halId, cur.day, recType);
+  $('submitBtn').textContent = sub ? 'إعادة التسليم إلى الإدارة' : 'تسليم إلى الإدارة';
+  $('submitInfo').textContent = sub
+    ? `تم التسليم ✓ الساعة ${new Date(sub.submitted_at).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`
+    : 'بعد التسليم تظهر نتائج اليوم لدى الإدارة.';
+}
+function showRec(t) {
+  recType = t; activeSid = null; recMode = 'list'; selStart = null; selEnd = null; pageOwner = null;
+  showView('rec');
+}
+
+function renderActive() {
+  const s = STUDENTS.find(x => x.id === activeSid);
+  if (!s) { recMode = 'list'; renderRec(); return; }
+  const r = recOf(s.id, cur.day);
+  const last = lastAyah(s.id, cur.day);
+  $('activeHead').innerHTML = `<b style="color:#123d24;font-size:18px">${RECN[recType]}: ${esc(s.full_name)}</b> — يوم ${cur.day}${attSummary(s.id)}`;
+  if (selStart == null && selEnd == null) renderSelFromDefault(s.id);
+  const from = selStart, to = selEnd;
+  $('sel').textContent = selLabel();
+  syncRangeInputs();
+  if (pageOwner !== s.id + '|' + cur.day) {
+    pageOwner = s.id + '|' + cur.day;
+    const g = selStart ?? SEQ[Math.min(last + 1, SEQ.length - 1)];
+    curPage = A[g][2];
+  }
+  renderText(last);
+  renderHist(s.id);
+}
+
+/* يعكس الحقول «من» و«إلى» على الاختيار الحالي */
+function syncRangeInputs() {
+  if (selStart != null) { $('fSur').value = A[selStart][0]; $('fAy').value = A[selStart][1]; }
+  if (selEnd != null) { $('tSur').value = A[selEnd][0]; $('tAy').value = A[selEnd][1]; }
+  else { $('tAy').value = ''; }
+}
+/* يحوّل (السورة، رقم الآية) إلى فهرس الآية الكلي مع التحقق */
+function ayahIndex(sur, ay) {
+  const n = SU[sur - 1][1];
+  if (!(ay >= 1 && ay <= n)) return null;
+  return starts[sur - 1] + ay - 1;
+}
+$('applyRange').onclick = () => {
+  if (activeSid == null) return;
+  const f = ayahIndex(+$('fSur').value, +$('fAy').value);
+  if (f == null) return msg('رقم آية «من» غير صحيح لهذه السورة.');
+  let t = null;
+  if ($('tAy').value !== '') {
+    t = ayahIndex(+$('tSur').value, +$('tAy').value);
+    if (t == null) return msg('رقم آية «إلى» غير صحيح لهذه السورة.');
+    if (POS[t] < POS[f]) return msg('آية «إلى» يجب أن تأتي بعد آية «من» في ترتيب القراءة (من الناس نحو البقرة).');
+  }
+  selStart = f; selEnd = t;
+  msg('تم تحديد المدى ✓', true);
+  renderActive();
+};
+
+function renderSelFromDefault(sid) {
+  const rec = recOf(sid, cur.day);
+  if (rec && rec.ayah_from != null) { selStart = rec.ayah_from; selEnd = rec.ayah_to; return; }
+  const base = lastAyah(sid, cur.day);
+  selStart = base + 1 < SEQ.length ? SEQ[base + 1] : null; selEnd = null;
+}
+
+/* النص يُعرض صفحة واحدة في كل مرة */
+function pageBounds(p) {
+  const lo = A.findIndex(x => x[2] === p);
+  let hi = lo;
+  while (hi + 1 < A.length && A[hi + 1][2] === p) hi++;
+  return [lo, hi];
+}
+function setPage(p) {
+  curPage = Math.min(604, Math.max(1, p));
+  const [lo] = pageBounds(curPage);
+  $('surah').value = A[lo][0];
+  renderText(lastAyah(activeSid, cur.day));
+}
+function renderText(last) {
+  const [lo, hi] = pageBounds(curPage);
+  const rs = selStart, re = selEnd;
+  const selLo = rs == null ? null : Math.min(POS[rs], POS[re ?? rs]), selHi = rs == null ? null : Math.max(POS[rs], POS[re ?? rs]);
+  let html = '';
+  for (let g = lo; g <= hi; g++) {
+    const cls = ['ay'];
+    if (re != null && POS[g] >= selLo && POS[g] <= selHi) cls.push('in');
+    if (re != null && POS[g] === selHi) cls.push('end');
+    if (g === rs && re == null) cls.push('start');
+    if (rs == null && last + 1 < SEQ.length && g === SEQ[last + 1]) cls.push('cur');
+    if (A[g][1] === 1) html += `<span class="surahHead">سورة ${SU[A[g][0]-1][0]}</span>`;
+    html += `<span class="${cls.join(' ')}" data-g="${g}">${A[g][3]}<span class="num">﴿${AR(A[g][1])}﴾</span></span> `;
+  }
+  $('text').innerHTML = html;
+  const label = `صفحة ${curPage} — ${SU[A[lo][0]-1][0]}`;
+  $('pgLabel').textContent = label;
+}
+
+function renderHist(sid) {
+  const rows = rowsOf(sid).sort((a, b) => b.day.localeCompare(a.day)).slice(0, 15);
+  if (!rows.length) { $('hist').textContent = 'لا يوجد سجل لهذا الطالب بعد.'; return; }
+  $('hist').innerHTML = `<div class="tw"><table><tr><th>اليوم</th><th>الحضور</th><th>ما سُمِّع</th><th>الكمية</th></tr>` +
+    rows.map(r => `<tr><td>${r.day}</td><td>${r.attendance ? ATT[r.attendance] : '—'}</td>
+      <td>${r.ayah_from != null ? `من ${label(r.ayah_from)} إلى ${label(r.ayah_to)}` : '—'}</td>
+      <td>${r.ayah_from != null ? amount(POS[r.ayah_to] - POS[r.ayah_from] + 1) : '—'}</td></tr>`).join('') + '</table></div>';
+}
+
+/* ---------- الأفعال ---------- */
+function pick(sid) { activeSid = sid; recMode = 'page'; selStart = null; selEnd = null; paint(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function backToList() { activeSid = null; recMode = 'list'; selStart = null; selEnd = null; paint(); }
+$('backBtn').onclick = backToList;
+
+async function setAtt(sid, k) {
+  const s = STUDENTS.find(x => x.id === sid);
+  const { error } = await db.from('itqan_daily').upsert({
+    branch_id: s.branch_id, halaqa_id: s.halaqa_id, student_id: sid, day: cur.day, period, attendance: k, recorded_by: ME.id
+  }, { onConflict: 'student_id,day,period' });
+  if (error) return msg('تعذّر الحفظ: ' + error.message);
+  await reloadDaily(); msg(`${s.full_name}: ${ATT[k]} ✓`, true); paint();
+}
+async function reloadDaily() {
+  const ids = HALAQAT.map(x => x.id);
+  if (!ids.length) { DAILY = []; SUBS = []; return; }
+  const [d, sb] = await Promise.all([
+    db.from('itqan_daily').select('*').gte('day', dayStr(-400)).in('halaqa_id', ids).order('day'),
+    db.from('itqan_submissions').select('*').gte('day', dayStr(-400)).in('halaqa_id', ids)
+  ]);
+  DAILY = d.data || [];
+  SUBS = sb.data || [];
+}
+async function refreshStudent(sid) {
+  const last = lastAyah(sid, null);
+  const st = STUDENTS.find(x => x.id === sid);
+  const ok = last >= 0;
+  const patch = { quran_last_ayah: ok ? last : null, quran_last_page: ok ? A[SEQ[last]][2] : null, quran_last_quarter: null };
+  const { error } = await db.from('itqan_students').update(patch).eq('id', sid);
+  if (error) msg('تعذّر تحديث موضع الطالب: ' + error.message);
+  Object.assign(st, patch);
+}
+$('save').onclick = async () => {
+  const s = STUDENTS.find(x => x.id === activeSid); if (!s) return;
+  if (selEnd == null) return msg('اضغط أولاً على آخر آية سمّعها الطالب.');
+  const [a, b] = POS[selStart] <= POS[selEnd] ? [selStart, selEnd] : [selEnd, selStart];
+  const row = {
+    branch_id: s.branch_id, halaqa_id: s.halaqa_id, student_id: s.id, day: cur.day, recorded_by: ME.id,
+    period: recType, ayah_from: a, ayah_to: b, page_from: A[a][2], page_to: A[b][2]
+  };
+  const { error } = await db.from('itqan_daily').upsert(row, { onConflict: 'student_id,day,period' });
+  if (error) return msg('تعذّر الحفظ: ' + error.message);
+  await reloadDaily(); await refreshStudent(s.id);
+  msg(`تم حفظ تسميع ${s.full_name} ✓ — يمكنك العودة إلى القائمة`, true);
+  selStart = null; selEnd = null;
+  renderActive();
+};
+$('undo').onclick = async () => {
+  const s = STUDENTS.find(x => x.id === activeSid); if (!s) return;
+  if (!confirm('مسح تسميع هذا اليوم لهذا الطالب؟ (يبقى الحضور كما هو)')) return;
+  const { error } = await db.from('itqan_daily').update({ ayah_from: null, ayah_to: null, page_from: null, page_to: null })
+    .eq('student_id', s.id).eq('day', cur.day).eq('period', recType);
+  if (error) return msg('تعذّر المسح: ' + error.message);
+  await reloadDaily(); await refreshStudent(s.id);
+  selStart = null; selEnd = null; msg('تم مسح تسميع اليوم ✓', true); renderActive();
+};
+$('clear').onclick = () => { selStart = null; selEnd = null; renderActive(); };
+
+$('submitBtn').onclick = async () => {
+  const hid = halId; if (!hid) return;
+  const list = stuList();
+  const done = list.filter(s => recOf(s.id, cur.day)?.ayah_to != null).length;
+  if (done < list.length && !confirm(`${RECN[recType]}: ${done} من ${list.length} طلاب فقط. هل تريد التسليم؟`)) return;
+  if (!confirm(`تسليم ${RECN[recType]} اليوم إلى الإدارة؟`)) return;
+  const { error } = await db.from('itqan_submissions').upsert({
+    halaqa_id: hid, day: cur.day, period: recType, teacher_id: TEACHER.id, submitted_by: ME.id, submitted_at: new Date().toISOString()
+  }, { onConflict: 'halaqa_id,day,period' });
+  if (error) return msg('تعذّر التسليم: ' + error.message);
+  await reloadDaily(); msg(`تم تسليم ${RECN[recType]} إلى الإدارة ✓`, true); paint();
+};
+
+function setPeriod(k) { period = k; paint(); }
+$('attSubmitBtn').onclick = async () => {
+  const hid = halId; if (!hid) return;
+  const list = stuList();
+  const done = list.filter(s => attOf(s.id, cur.day, period)?.attendance).length;
+  if (done < list.length && !confirm(`سجّلتَ حضور ${done} من ${list.length} طلاب في ${PN()}. هل تريد التسليم؟`)) return;
+  if (!confirm(`تسليم تحضير ${PN()} إلى الإدارة؟`)) return;
+  const { error } = await db.from('itqan_submissions').upsert({
+    halaqa_id: hid, day: cur.day, period, teacher_id: TEACHER.id, submitted_by: ME.id, submitted_at: new Date().toISOString()
+  }, { onConflict: 'halaqa_id,day,period' });
+  if (error) return msg('تعذّر التسليم: ' + error.message);
+  await reloadDaily();
+  const i = PERIODS.findIndex(x => x[0] === period);
+  if (i < PERIODS.length - 1) period = PERIODS[i + 1][0];   // ينتقل إلى الفترة التالية
+  msg('تم تسليم التحضير ✓', true); paint();
+};
+
+$('halSel').onchange = () => { activeSid = null; recMode = 'list'; selStart = null; selEnd = null; paint(); };
+$('day').onchange = () => { cur.day = $('day').value || dayStr(0); activeSid = null; recMode = 'list'; selStart = null; selEnd = null; paint(); };
+$('surah').onchange = () => setPage(A[starts[+$('surah').value - 1]][2]);
+$('prevPg').onclick = $('prevPg2').onclick = () => setPage(curPage - 1);
+$('nextPg').onclick = $('nextPg2').onclick = () => setPage(curPage + 1);
+$('goPage').onclick = () => {
+  const p = +$('pg').value, g = A.findIndex(x => x[2] === p);
+  if (g < 0) return alert('رقم صفحة غير صحيح (1 إلى 604).');
+  setPage(p);
+  window.scrollTo({ top: $('text').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+};
+$('text').addEventListener('click', e => {
+  const el = e.target.closest('[data-g]'); if (!el || activeSid == null) return;
+  const g = +el.dataset.g;
+  if (selStart == null) selStart = SEQ[Math.min(lastAyah(activeSid, cur.day) + 1, SEQ.length - 1)];
+  selEnd = g;
+  renderActive();
+});
+
+/* ---------- المعاينة (صور المصحف hafs/1.png حتى 604.png) ---------- */
+function showPage(p) {
+  previewPage = Math.min(604, Math.max(1, p));
+  $('pTitle').textContent = `صفحة ${previewPage}`;
+  $('pImg').style.display = 'block'; $('pImg').src = `hafs/${previewPage}.png`; $('pMsg').textContent = '';
+}
+$('pImg').onerror = () => { $('pImg').style.display = 'none'; $('pMsg').textContent = 'لم تُعثر على صورة الصفحة. ضع مجلد hafs بجانب هذه الصفحة، بأسماء الملفات 1.png حتى 604.png.'; };
+$('preview').onclick = () => {
+  const g = selEnd ?? selStart ?? SEQ[Math.min(lastAyah(activeSid, cur.day) + 1, SEQ.length - 1)];
+  showPage(A[g][2]);
+  $('modal').classList.add('on');
+};
+$('pPrev').onclick = () => showPage(previewPage - 1);
+$('pNext').onclick = () => showPage(previewPage + 1);
+$('pClose').onclick = () => $('modal').classList.remove('on');
+$('modal').addEventListener('click', e => { if (e.target.id === 'modal') $('modal').classList.remove('on'); });
+
+function msg(t, ok) { const m = $('msg'); m.className = ok ? 'ok' : ''; m.textContent = t; }
+
+/* ---------- البداية ---------- */
+SU.forEach(([name, count], i) => {
+  const o = document.createElement('option'); o.value = i + 1; o.textContent = `${i + 1}. ${name} (${count})`; $('surah').appendChild(o);
+});
+$('surah').value = 1;
+$('fSur').innerHTML = $('surah').innerHTML;
+$('tSur').innerHTML = $('surah').innerHTML;
+
+loadLib(LIBS.slice(), ok => {
+  if (!ok) { $('gMsg').textContent = 'تعذّر تحميل مكتبة الاتصال. تأكد من الإنترنت ثم أعد فتح الصفحة.'; return; }
+  db = supabase.createClient('https://tmhfjnqujgmwayktsbnd.supabase.co', 'sb_publishable_CZiS1VnVdN3hnc9YT1k4wg_0uE7yNmL');
+  db.auth.getSession().then(({ data: { session } }) => { if (session) enter(); });
+});
+</script>
+</body>
+</html>
